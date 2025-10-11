@@ -1,45 +1,37 @@
-'use client'
-import { useMockAuth } from '@/app/store/auth/useMockAuth';
-import { useRoom } from '@/app/store/room/useRoomStore';
-import { useParams, useRouter } from 'next/navigation';
+"use client";
+import { useMockAuth } from "@/app/store/auth/useMockAuth";
+import { useRoom } from "@/app/store/room/useRoomStore";
+import { useParams, usePathname, useRouter } from "next/navigation";
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from "react";
 
-function RoomLayout({ children } : { children : React.ReactNode }) {
+function RoomLayout({ children }: { children: React.ReactNode }) {
+  const [isJoining, setIsJoining] = useState(false);
+  const { roomCode }: { roomCode: string } = useParams();
+  const { joinRoom, exitRoom , error, currentRoom, hasExit } = useRoom();
+  const { mockUser } = useMockAuth();
+  const router = useRouter();
+  
+  useEffect(() => {
+    if (!mockUser || !roomCode || isJoining || hasExit) return;
+    if (currentRoom?.roomCode === roomCode) return;
 
-    const [ isJoining , setIsJoining ] = useState(false);
-    const { roomCode } : { roomCode : string } = useParams();
-    const { joinRoom, error, currentRoom , clearRoom } = useRoom();
-    const { mockUser } = useMockAuth();
-    const router = useRouter()
-
-    useEffect(() => {
-       
-        if(!mockUser || !roomCode || isJoining) return
-        if(currentRoom?.roomCode === roomCode) return
-        
-        setIsJoining(true)
-        const userId = mockUser.id
-        joinRoom(roomCode , userId)
-        .then(res => {
-            if(!res) {
-                alert("Failed to join room")
-                router.push("/")
-            } 
-        })
-        .finally(() => {
-            setIsJoining(false)
-        })
-    },[roomCode , mockUser , router , joinRoom , isJoining , currentRoom])
-
-    useEffect(() => {
-        return () => {
-            console.log('Leaving room')
-            clearRoom()
+    setIsJoining(true);
+    const userId = mockUser.id;
+    joinRoom(roomCode, userId)
+      .then((res) => {
+        if (!res) {
+          alert("Failed to join room");
+          router.push("/");
         }
-    },[])
-    
- // Loading state
+      })
+      .finally(() => {
+        setIsJoining(false);
+      });
+  }, [roomCode, mockUser, router, joinRoom, isJoining, currentRoom , hasExit]);
+
+
+  // Loading state
   if (isJoining) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -70,7 +62,6 @@ function RoomLayout({ children } : { children : React.ReactNode }) {
     );
   }
 
-  // ✅ Render children (page.tsx, vote/page.tsx, result/page.tsx)
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -87,9 +78,7 @@ function RoomLayout({ children } : { children : React.ReactNode }) {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-6">
-        {children}
-      </main>
+      <main className="max-w-4xl mx-auto px-4 py-6">{children}</main>
 
       {/* Footer (Optional) */}
       <footer className="bg-white border-t mt-8">
@@ -102,4 +91,4 @@ function RoomLayout({ children } : { children : React.ReactNode }) {
   );
 }
 
-export default RoomLayout
+export default RoomLayout;

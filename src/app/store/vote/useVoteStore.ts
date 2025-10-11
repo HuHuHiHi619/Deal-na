@@ -16,6 +16,8 @@ export interface VoteState {
   setVotes: (votes: Vote[]) => void;
   addVote: (vote: Vote) => void;
   removeVote: (voteId: string) => void;
+  clearVotes : () => void
+
   fetchVote: () => Promise<void>;
   createVote: (optionId : string) => Promise<void>;
   deleteVote: (voteId: string , optionid : string) => Promise<void>;
@@ -35,6 +37,7 @@ export const useVoteStore = create<VoteState>((set, get) => ({
     console.log('remove vote in store received voteId' , voteId);
     set({ votes: get().votes.filter((v) => v.id !== voteId) });
   },
+  clearVotes: () => set({ votes: [] }), 
 
   // API
   fetchVote: async () => {

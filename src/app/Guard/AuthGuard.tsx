@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 import { useAuth } from "../store/auth/useAuth";
-import LoginButton from "../component/Login";
+import LoginButton from "../component/LoginButton";
 import { useUiStore } from "../store/useUiStore";
 
 interface AuthGuardProps {

@@ -7,12 +7,15 @@ import { useMockAuth } from "@/app/store/auth/useMockAuth";
 import { useUiStore } from "@/app/store/useUiStore";
 import { useOptionStore } from "@/app/store/option/useOptionStore";
 import { useVoteStore } from "@/app/store/vote/useVoteStore";
+import { useRoomMemberStore } from "@/app/store/room/useRoomMemberStore";
 
 export default function RoomPage() {
   const { roomCode }: { roomCode: string } = useParams();
   const { currentRoom } = useRoom();
   const { mockUser } = useMockAuth();
   const { deleteOption, fetchOption } = useOptionStore();
+  const { addMember } = useRoomMemberStore();
+
   const { fetchVote } = useVoteStore();
 
   const handleDeleteOption = (optionId: string) => {
@@ -22,7 +25,8 @@ export default function RoomPage() {
   useEffect(() => {
     if (!roomCode || !mockUser) return;
     fetchOption(roomCode);
-    fetchVote()
+    fetchVote();
+    addMember(mockUser.id);
   }, [roomCode, mockUser, fetchOption]);
 
   if (!currentRoom) {
@@ -41,9 +45,7 @@ export default function RoomPage() {
           Room Code: <span className="font-mono">{currentRoom.roomCode}</span>
         </p>
       </div>
-      <VoteOptions
-        handleDeleteOption={handleDeleteOption}
-      />
+      <VoteOptions handleDeleteOption={handleDeleteOption} />
       <div className="bg-gray-50 p-4 rounded-lg">
         <h3 className="font-semibold mb-2">Room Information</h3>
         <p className="text-sm text-gray-600">Status: {currentRoom.status}</p>

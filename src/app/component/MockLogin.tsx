@@ -12,9 +12,6 @@ export default function MockLogin() {
     router.push("/room"); // หน้า vote ของคุณ
   };
 
-  useEffect(() => {
-    console.log('mock user', mockUser )
-  },[])
   return (
     <div>
       <h1>Mock Login</h1>

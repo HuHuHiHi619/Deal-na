@@ -1,18 +1,16 @@
 'use client'
-import React, { useEffect } from "react";
+import React from "react";
 import TopicPage from "../topic/page";
-import LogoutButton from "../component/Logout";
+import LogoutButton from "../component/LogoutButton";
 import CreateRoomButton from "../component/CreateRoomButton";
 import OptionsPage from "../option/page";
-import { useRoom } from "../store/room/useRoomStore";
+
 import ShareRoom from "../component/ShareRoom";
-import { useRealtimeRoom } from "../hooks/useRealtimeRoom";
+import { useRoom } from "../store/room/useRoomStore";
 
 function Rooms() {
   const { currentRoom } = useRoom();
   
-  useRealtimeRoom(currentRoom?.id)
-
   return (
     <>
       <TopicPage />

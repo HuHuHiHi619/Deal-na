@@ -8,17 +8,27 @@ function OptionsPage() {
     useRoomForm();
 
   return (
-    <>
-      <h1>Options Page</h1>
-      <p>TOPIC IS: {titleInput}</p>
+    <div className="flex  items-center justify-center p-4">
+      {/* Header */}
+      <div className="w-full max-w-md bg-white rounded-2xl  p-4 md:p-12 space-y-8">
+        <h1 className="text-2xl font-light text-gray-700 mb-2">
+          Voting Options
+        </h1>
+        <div className="inline-flex py-2 px-4  rounded-xl border border-rose-200">
+          <p className="text-sm text-gray-600">
+            TOPIC:{" "}
+            <span className="font-medium text-rose-600">{titleInput}</span>
+          </p>
+        </div>
 
-      {/* Pass the relevant props to the new component */}
-      <OptionForm
-        options={optionsInput} // Use optionsInput or myOwnOptions depending on your logic
-        setOptions={setOptionsInput}
-        addOption={addOptionInput}
-      />
-    </>
+        {/* Option Form Component */}
+        <OptionForm
+          options={optionsInput}
+          setOptions={setOptionsInput}
+          addOption={addOptionInput}
+        />
+      </div>
+    </div>
   );
 }
 

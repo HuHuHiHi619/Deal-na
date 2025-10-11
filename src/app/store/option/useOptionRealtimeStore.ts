@@ -7,6 +7,7 @@ export interface RealtimeStore {
   channel: RealtimeChannel | null;
   subscribe: (roomId: string) => void;
   unsubscribe: () => void;
+  sendReady?: (userId: string) => Promise<boolean>;
 }
 
 export const useOptionRealtimeStore = create<RealtimeStore>(

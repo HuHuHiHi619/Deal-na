@@ -1,14 +1,8 @@
 "use client";
-
-import { useEffect } from "react";
-import LoginButton from "./component/Login";
-import { useAuth } from "./store/auth/useAuth";
-import { useRouter } from "next/navigation";
+import LoginButton from "./component/LoginButton";
 import MockLogin from "./component/MockLogin";
-import { useRoom } from "./store/room/useRoomStore";
 
 export default function Home() {
-  const { clearRoom } = useRoom();
   {
     /* 
     const { user, loading } = useAuth();
@@ -23,12 +17,30 @@ export default function Home() {
     if (loading) return <p>Loading...</p>;
     */
   }
+
   return (
-    <>
-      <h1>DEAL-NA</h1>
-      <p>PLEASE LOGIN TO CONTINUE</p>
-      <button onClick={clearRoom} className="bg-red-600 text-white p-4">CLEAR ROOM</button>
-      <MockLogin />
-    </>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      
+      {/* CONTAINER */}
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 md:p-12 space-y-8">
+       
+        {/* HEADER */}
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+            DEAL-NA
+          </h1>
+          <p className="text-sm md:text-base text-gray-600">
+            PLEASE LOGIN TO CONTINUE
+          </p>
+        </div>
+
+        {/* BUTTON */}
+        <div className="space-y-3">
+          <LoginButton />
+          <MockLogin />
+        </div>
+      </div>
+      
+    </div>
   );
 }

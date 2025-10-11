@@ -3,7 +3,13 @@ import { persist } from "zustand/middleware";
 import { useUiStore } from "../useUiStore";
 import { createRoomAPI, joinRoomAPI } from "../../lib/roomAPI";
 import { Option, useOptionStore } from "../option/useOptionStore";
-
+import { useRoomRealtimeStore } from "./useRoomRealtimeStore";
+import { useOptionRealtimeStore } from "../option/useOptionRealtimeStore";
+import { useVoteRealtimeStore } from "../vote/useVoteRealtimeStore";
+import { useRoomRealtimeReadyStore } from "./useRoomRealtimeReadyStore";
+import { useVoteStore } from "../vote/useVoteStore";
+import { useRoomReadyStore } from "./useRoomReadyStore";
+import { useRoomMemberStore } from "./useRoomMemberStore";
 
 interface Room {
   id: string;
@@ -21,6 +27,7 @@ interface RoomState {
   currentRoom: Room | null;
   rooms: Room[];
   error: string | null;
+  hasExit : boolean
 
   // Actions
   setError: (error: string | null) => void;
@@ -33,7 +40,7 @@ interface RoomState {
     userId: string
   ) => Promise<void>;
   joinRoom: (roomCode: string, userId: string) => Promise<any>;
-  clearRoom: () => void;
+  exitRoom: () => void;
 }
 
 export const useRoom = create<RoomState>()(
@@ -42,6 +49,7 @@ export const useRoom = create<RoomState>()(
       // Initial State
       currentRoom: null,
       rooms: [],
+      hasExit : false,
       error: null,
 
       setError: (error: string | null) => set({ error }),
@@ -86,7 +94,7 @@ export const useRoom = create<RoomState>()(
       // Join room
       joinRoom: async (roomCode: string, userId: string) => {
         useUiStore.getState().setLoading("joinRoomLoading", true);
-        set({ error: null });
+        set({ error: null , hasExit : false});
         try {
           const data = await joinRoomAPI(roomCode, userId);
 
@@ -120,19 +128,35 @@ export const useRoom = create<RoomState>()(
       },
 
       // Clear room
-      clearRoom: () => {
-        set({
-          currentRoom: null,
-          error: null,
-        });
+      exitRoom: () => {
+        console.log("🚪 Exiting room...");
+
+        // 1. Unsubscribe realtime ทุก channel
+        const { unsubscribe: unsubRoom } = useRoomRealtimeStore.getState();
+        const { unsubscribe: unsubOption } = useOptionRealtimeStore.getState();
+        const { unsubscribe: unsubVote } = useVoteRealtimeStore.getState();
+        const { unsubscribe: unsubReady } =
+          useRoomRealtimeReadyStore.getState();
+
+        unsubRoom();
+        unsubOption();
+        unsubVote();
+        unsubReady();
+
+        // 2. Clear room data
+        set({ currentRoom: null, error: null , hasExit : true});
+
+        // 3. Clear related stores (ถ้ามี)
+
+        useVoteStore.getState().clearVotes?.();
+        useRoomReadyStore.getState().clearReady?.();
+        useRoomMemberStore.getState().clearMembers?.();
         useOptionStore.getState().setOptions([]);
+        console.log('✅ Room exited successfully');
+
       },
 
-      clearVote: () => {
-        set({
-          error: null,
-        });
-      },
+     
     }),
     {
       name: "room-storage", // unique name for localStorage key

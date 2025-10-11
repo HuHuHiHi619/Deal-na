@@ -30,6 +30,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           {children}
+          <div id="popup-root" />
         </AuthProvider>
       </body>
     </html>
