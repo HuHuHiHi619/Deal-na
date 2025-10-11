@@ -1,13 +1,17 @@
 import { QRCodeSVG } from "qrcode.react";
 import { useRoom } from "../store/room/useRoomStore";
 import Link from "next/link";
+import { usePortal } from "../hooks/usePortal";
+import { useUiStore } from "../store/useUiStore";
+import { X } from "lucide-react";
 
 export default function ShareRoom() {
   const { currentRoom } = useRoom();
-
+  const { setIsPopup } = useUiStore();
+  const portal = usePortal();
   if (!currentRoom) return null;
-  return (
-    <div className="bg-gradient-to-br from-rose-100 to-amber-50 p-6 rounded-2xl shadow-sm border border-rose-200/50">
+  return portal(
+    <div className="popup-center bg-amber-100/20 backdrop-blur-2xl p-6 rounded-2xl shadow-sm border border-rose-200/50">
       <div className="text-center mb-6">
         <div className="inline-flex items-center justify-center w-12 h-12 bg-rose-100 rounded-full mb-3">
           <svg
@@ -35,7 +39,7 @@ export default function ShareRoom() {
       {/* Room URL Link */}
       <div className="mb-6">
         <Link href={currentRoom.url || ""} target="_blank">
-          <div className="bg-white/80 backdrop-blur-sm border border-rose-200 rounded-xl p-4 hover:bg-white hover:border-rose-300 transition-all duration-300 group cursor-pointer">
+          <div className="bg-white/80 border border-rose-200 rounded-xl p-4 hover:bg-white hover:border-rose-300 transition-all duration-300 group cursor-pointer">
             <div className="flex items-center justify-between">
               <p className="text-gray-700 font-medium truncate mr-3">
                 {currentRoom.url}
@@ -79,6 +83,14 @@ export default function ShareRoom() {
           </div>
         </div>
       )}
+      <div className="flex justify-center">
+        <button
+          onClick={() => setIsPopup(false)}
+          className="bg-red-400 text-white p-2 mt-4 rounded-full hover:scale-105 hover:bg-rose-500 transition-all duration-300"
+        >
+          <X size={30} />
+        </button>
+      </div>
     </div>
   );
 }

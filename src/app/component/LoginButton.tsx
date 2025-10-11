@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useAuth } from "../store/auth/useAuth";
+import { Facebook } from "lucide-react";
 
 export default function LoginButton() {
   const { loginWithFacebook } = useAuth();
@@ -15,10 +16,14 @@ export default function LoginButton() {
       console.error("Login with facebook error :", error);
     }
   };
-  
+
   return (
-    <button className="bg-blue-500 text-white p-4" onClick={handleLogin}>
-      Login with Facebook
-    </button>
+    <div className="flex justify-center bg-blue-500 text-white hover:scale-105 p-4 space-x-3 rounded-3xl transition-all ease-in-out duration-250">
+      <Facebook />
+
+      <button className=" " onClick={handleLogin}>
+        Login with Facebook
+      </button>
+    </div>
   );
 }

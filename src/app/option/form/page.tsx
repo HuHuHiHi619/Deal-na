@@ -33,7 +33,7 @@ function OptionForm({ options, setOptions, addOption }: OptionFormProps) {
   };
 
   return (
-     <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-4 md:p-12 space-y-8">
+     <div className="w-full max-w-md bg-white rounded-2xl shadow-xl  md:p-12 space-y-8">
       <div className="mb-6">
         <h2 className="text-xl font-light text-rose-700 mb-2">
           Add Voting Options
@@ -65,7 +65,7 @@ function OptionForm({ options, setOptions, addOption }: OptionFormProps) {
           <button
             type="button"
             onClick={handleAddOption}
-            className="w-full  text-white py-3 rounded-xl font-medium bg-linear-to-r from-rose-400 to-pink-500  transform hover:scale-[1.02] transition-all duration-300 flex items-center justify-center space-x-2 border border-lavender-200"
+            className="w-full  text-white py-3 rounded-xl font-medium bg-gradient-to-r from-rose-400 to-pink-400  transform hover:scale-[1.02] transition-all duration-300 flex items-center justify-center space-x-2 border border-lavender-200"
           >
             <span>ADD OPTION</span>
           </button>
