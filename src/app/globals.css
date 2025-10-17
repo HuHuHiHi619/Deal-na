@@ -15,3 +15,41 @@ body {
   justify-content: center;
 }
 
+.trash-button {
+  color: #dc2c2c;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+.trash-button:hover {
+  transform: scale(1.1);
+ }
+
+.vote-button {
+  color: #dc2c2c;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+.vote-button:hover {
+  background-color: #e9aac2;
+  transform: scale(1.05);
+ }
+
+.btn-gradient {
+  background: linear-gradient(to right, #fb7185, #f472b6);
+  color: white;
+  border-radius: 8px;
+  padding: 8px;
+  width: 100%;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+
+.btn-gradient:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+

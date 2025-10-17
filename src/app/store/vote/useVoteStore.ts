@@ -11,9 +11,17 @@ export interface Vote {
   createdBy: string;
 }
 
+export interface VoteResults {
+  option_id : string;
+  title : string;
+  voteCount: number
+}
+
 export interface VoteState {
   votes: Vote[];
+  voteResults : VoteResults[]
   setVotes: (votes: Vote[]) => void;
+  
   addVote: (vote: Vote) => void;
   removeVote: (voteId: string) => void;
   clearVotes : () => void
@@ -25,8 +33,9 @@ export interface VoteState {
 
 export const useVoteStore = create<VoteState>((set, get) => ({
   votes: [],
+  voteResults : [],
   setVotes: (votes) => set({ votes: votes }),
-
+  
   addVote: (vote) => {
     const exist = get().votes.some((v) => v.id === vote.id);
     if (!exist) {
@@ -45,7 +54,8 @@ export const useVoteStore = create<VoteState>((set, get) => ({
       const votes = await actionWrapper("fetchVoteLoading", {
         action: async ({ roomId }) => await getVoteAPI(roomId),
       });
-      set({ votes });
+      console.log('fetch vote in store sent votes' , votes);
+      set({ voteResults : votes });
     } catch (error) {
       console.error(error);
     }

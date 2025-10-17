@@ -1,17 +1,20 @@
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import React from "react";
 import { useRoom } from "../store/room/useRoomStore";
+import { useRealtimeRoom } from "../hooks/useRealtimeRoom";
 
 function ExitRoomButton() {
   const router = useRouter();
+  const { roomCode } : { roomCode: string } = useParams()
   const { exitRoom } = useRoom();
-
+  const { unsubscribeAll } = useRealtimeRoom(roomCode);
   const handleExit = () => {
     try {
       const confirmed = confirm("Are you sure you want to exit the room?");
       if (!confirmed) return;
+      unsubscribeAll()
       exitRoom();
-      router.push("/room");
+      router.replace("/room");
     } catch (error) {
       console.error("handleExit error:", error);
     }

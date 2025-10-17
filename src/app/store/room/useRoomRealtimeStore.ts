@@ -2,18 +2,20 @@ import { create } from "zustand";
 import { RealtimeStore } from "../option/useOptionRealtimeStore";
 import { supabase } from "@/app/lib/supabase";
 import { useRoom } from "./useRoomStore";
+import { useRoomMemberStore } from "./useRoomMemberStore";
 
 export const useRoomRealtimeStore = create<RealtimeStore>((set, get) => ({
   channel: null,
   subscribe: (roomId: string) => {
-    const { createRoom, joinRoom } = useRoom.getState();
-    const channel = supabase.channel("rooms")
+    const { createRoom } = useRoom.getState();
+    const { addMember } = useRoomMemberStore.getState();
+    const channel = supabase.channel(`room:${roomId}`)
     .on(
       "postgres_changes",
       {
         event: "INSERT",
         schema: "public",
-        table: "rooms",
+        table: "room",
         filter: `id=eq.${roomId}`,
       },
       (payload) => {
@@ -28,7 +30,8 @@ export const useRoomRealtimeStore = create<RealtimeStore>((set, get) => ({
             table : 'room_members',
             filter : `room_id=eq.${roomId}`
         },(payload) => {
-            joinRoom(payload.new.room_code, payload.new.user_id);
+           addMember(payload.new.user_id);
+
         }
     )
     .subscribe()

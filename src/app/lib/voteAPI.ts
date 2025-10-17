@@ -4,5 +4,6 @@ export async function getVoteAPI(roomId: string) {
     if (res.status === 404 || res.status === 204) return [];
     throw new Error("Failed to get votes");
   }
-  return res.json();
+  const data = await res.json()
+  return data.formattedResult
 }

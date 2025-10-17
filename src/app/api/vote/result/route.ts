@@ -21,7 +21,7 @@ export async function GET (req : Request){
         }))
    
         if(resultsError) throw resultsError;
-   
+        console.log('formattedResult' , formattedResult);
         return NextResponse.json({ formattedResult });
     }catch(error){console.error(error)}
 }

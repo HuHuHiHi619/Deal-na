@@ -27,7 +27,8 @@ interface RoomState {
   currentRoom: Room | null;
   rooms: Room[];
   error: string | null;
-  hasExit : boolean
+  isJoin : boolean;
+  hasExit: boolean;
 
   // Actions
   setError: (error: string | null) => void;
@@ -49,8 +50,9 @@ export const useRoom = create<RoomState>()(
       // Initial State
       currentRoom: null,
       rooms: [],
-      hasExit : false,
+      hasExit: false,
       error: null,
+      isJoin: false,
 
       setError: (error: string | null) => set({ error }),
       clearError: () => set({ error: null }),
@@ -94,34 +96,73 @@ export const useRoom = create<RoomState>()(
       // Join room
       joinRoom: async (roomCode: string, userId: string) => {
         useUiStore.getState().setLoading("joinRoomLoading", true);
-        set({ error: null , hasExit : false});
+        
+        const state = get()
+        if(state.isJoin) {
+          console.log('room already joined');
+          return
+        }
+        
+        set({ error: null , isJoin : true });
         try {
           const data = await joinRoomAPI(roomCode, userId);
+          console.log("📦 joinRoom API response:", data);
 
-          const roomData: Room = {
-            id: data.room.id,
-            roomCode: data.room.room_code,
-            title: data.room.title,
-            status: data.room.status || "open",
-            createdAt: data.room.createdAt || new Date().toISOString(),
+          // 👇 ตรวจสอบก่อนว่ามี error จาก API หรือไม่
+          if (data.error) {
+            throw new Error(data.error);
+          }
+
+          // เช็คว่า response มีข้อมูลครบถ้วนหรือไม่
+          if (!data) {
+            throw new Error("No data returned from API");
+          }
+
+          // จัดการกรณีที่ API return ข้อมูลในรูปแบบต่างๆ
+          const roomData = data.room || data;
+
+          if (!roomData || !roomData.id) {
+            console.error("Invalid room data:", data);
+            throw new Error("Invalid room data received");
+          }
+          const room: Room = {
+            id: roomData.id,
+            roomCode: roomData.room_code || roomData.roomCode || roomCode,
+            title: roomData.title || "Untitled Room",
+            status: roomData.status || "open",
+            createdAt:
+              roomData.createdAt ||
+              roomData.created_at ||
+              new Date().toISOString(),
             expiredAt:
-              data.room.expiredAt ||
+              roomData.expiredAt ||
+              roomData.expired_at ||
               new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-            url: data.room.url,
-            options: data.room.options || [],
+            url: roomData.url || `/room/${roomCode}`,
+            options: data.options || [],
           };
 
+          console.log("✅ Room data processed:", room);
+
           set({
-            currentRoom: roomData,
+            currentRoom: room,
+            hasExit: false,
           });
 
-          useOptionStore.getState().setOptions(data.room.options || []);
+          // Set options ถ้ามี
+          if (data.options && Array.isArray(data.options)) {
+            useOptionStore.getState().setOptions(data.options);
+          }
 
-          return data;
+          return room;
         } catch (error: any) {
-          console.error("Failed to join room:", error);
-          set({ error: error.message || "Failed to join room" });
-          return null;
+          console.error("❌ Failed to join room:", error);
+          const errorMessage =
+            error.response?.data?.message ||
+            error.message ||
+            "Failed to join room";
+          set({ error: errorMessage });
+          throw error;
         } finally {
           useUiStore.getState().setLoading("joinRoomLoading", false);
         }
@@ -144,7 +185,7 @@ export const useRoom = create<RoomState>()(
         unsubReady();
 
         // 2. Clear room data
-        set({ currentRoom: null, error: null , hasExit : true});
+        set({ currentRoom: null, error: null, hasExit: true });
 
         // 3. Clear related stores (ถ้ามี)
 
@@ -152,11 +193,8 @@ export const useRoom = create<RoomState>()(
         useRoomReadyStore.getState().clearReady?.();
         useRoomMemberStore.getState().clearMembers?.();
         useOptionStore.getState().setOptions([]);
-        console.log('✅ Room exited successfully');
-
+        console.log("✅ Room exited successfully");
       },
-
-     
     }),
     {
       name: "room-storage", // unique name for localStorage key

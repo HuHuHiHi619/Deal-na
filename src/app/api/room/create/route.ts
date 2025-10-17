@@ -3,11 +3,11 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   console.log("Request received at /api/room/create");
-  console.log("request", req);
+
   try {
-    const body = await req.json(); 
-    console.log("parsed body", body);
-    const { title, options , userId } = body;
+    const body = await req.json();
+
+    const { title, options, userId } = body;
 
     if (!title || !options || !Array.isArray(options) || options.length === 0)
       return NextResponse.json({ error: "Invalid options" });
@@ -39,13 +39,23 @@ export async function POST(req: Request) {
     } else {
       console.log("Inserted room:", newRoom);
     }
-    if(!newRoom) return NextResponse.json({ error: "Failed to create room" });
+    if (!newRoom) return NextResponse.json({ error: "Failed to create room" });
+
+    const { data: owner, error: ownerError } = await supabase
+      .from("room_members")
+      .insert([{ user_id: userId, room_id: newRoom.id }])
+      .select("id")
+      .single();
+
+    if (ownerError) {
+      console.error("Failed to add room owner to members:", ownerError);
+    }
 
     const optionLists = options
       .map((option) => ({
         title: option,
         room_id: newRoom.id,
-        user_id : userId
+        user_id: userId,
       }))
       .filter((option) => option.title !== "");
 
@@ -65,7 +75,7 @@ export async function POST(req: Request) {
         id: newRoom.id,
         room_code: newRoom.room_code,
         title: newRoom.title,
-        url: `${origin}/room/${newRoom.room_code}`, 
+        url: `${origin}/room/${newRoom.room_code}`,
       },
       options: newOptions,
       message: "Room created successfully",
