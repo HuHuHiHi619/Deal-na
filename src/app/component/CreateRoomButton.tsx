@@ -27,7 +27,7 @@ function CreateRoomButton() {
 
   return (
     <div className="px-6">
-      <button className="w-full text-2xl space-x-3 bg-gradient-to-r from-rose-400 to-pink-400 text-white border border-rose-200 px-6 py-3  rounded-xl font-medium hover:bg-rose-50 hover:border-rose-300 transition-all duration-300 flex items-center justify-center" onClick={handleCreateRoom}>
+      <button className="w-full text-2xl space-x-3 bg-gradient-to-r from-rose-400 to-pink-400 text-white border border-rose-200 px-6 py-3  rounded-xl font-medium hover:translate-y-[-4px] cursor-pointer transition-all duration-300 flex items-center justify-center" onClick={handleCreateRoom}>
        <p>PREPARE DEAL</p> 
        <HeartHandshake size={28}/>
       </button>

@@ -26,7 +26,7 @@ export default function ShareRoom() {
 
       {/* Room URL Link */}
       <div className="mb-6">
-        <div className="bg-white/80 border border-rose-200 rounded-xl p-4 hover:bg-white hover:border-rose-300 transition-all duration-300 group cursor-pointer relative">
+        <div className="bg-rose-100 rounded-xl p-4 hover:bg-rose-400/50 shadow-md hover:border-rose-300 transition-all duration-300 group cursor-pointer relative">
           <Link href={currentRoom.url || ""}>
             <div className="flex items-center justify-between">
               <p className="text-gray-700 font-medium truncate mr-3">
@@ -77,7 +77,7 @@ export default function ShareRoom() {
       <div className="flex justify-center">
         <button
           onClick={() => setIsPopup(false)}
-          className="bg-red-400 text-white p-2 mt-4 rounded-full hover:scale-105 hover:bg-rose-500 transition-all duration-300"
+          className="bg-rose-400 text-white p-2 mt-4 rounded-full hover:scale-105 hover:bg-rose-500 cursor-pointer transition-all duration-300"
         >
           <X size={30} />
         </button>

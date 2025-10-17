@@ -39,7 +39,7 @@ body {
  }
 
 .btn-gradient {
-  background: linear-gradient(to right, #fb7185, #f472b6);
+  background:  #fb7185;
   color: white;
   border-radius: 8px;
   padding: 8px;

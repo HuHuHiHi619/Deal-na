@@ -29,8 +29,8 @@ export default function TopicPage() {
   return (
     <div className="flex items-center justify-center p-4">
       {/* container  */}
-      <div className="w-full max-w-md bg-white rounded-2xl p-4 md:p-12 space-y-4 border-b border-rose-300">
-        <h2 className="text-xl font-bold text-rose-700 mb-2">
+      <div className="w-full max-w-md bg-rose-100 rounded-2xl p-4 md:p-12 space-y-4 shadow-lg">
+        <h2 className="text-2xl font-bold text-rose-700 mb-2">
           Create Today's Topic
         </h2>
         <p className="text-sm text-gray-600">
@@ -55,7 +55,7 @@ export default function TopicPage() {
 
         <button
           type="submit"
-          className="w-full bg-gradient-to-r from-rose-400 to-pink-400 text-white py-3 rounded-xl font-medium hover:from-rose-500 hover:to-pink-500 transform hover:scale-[1.02] transition-all duration-300 shadow-sm hover:shadow-md"
+          className="w-full bg-gradient-to-r from-rose-400 to-pink-400 text-white py-3 rounded-xl font-medium transform hover:scale-[1.02] cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md"
           >
           CONFIRM TOPIC
         </button>
