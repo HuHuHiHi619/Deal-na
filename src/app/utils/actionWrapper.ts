@@ -3,26 +3,32 @@ import { getRequiredContext } from "./context";
 
 interface ActionFunction<T> {
   action: (context: { userId: string; roomId: string }) => Promise<T>;
-  onSuccess?: () => void;
+  onSuccess?: (data : T) => void;
+  onError? : (error : unknown) => void
 }
 
 export async function actionWrapper<T>(
-  loadingKey: string,
+  key: string,
   alterAction: ActionFunction<T>
 ) {
-  const setLoading = useUiStore.getState().setLoading;
-  setLoading(loadingKey, true);
+  const ui = useUiStore.getState()
+  ui.setLoading(key, true);
+  ui.setError(key, null);
+  
   try {
     const context = getRequiredContext();
     const result = await alterAction.action(context);
 
     if (alterAction.onSuccess) {
-      alterAction.onSuccess();
+      alterAction.onSuccess(result);
     }
     return result
   } catch (error) {
-    console.error(`Action with key '${loadingKey}' failed:`, error);
+    console.error(`Action with key '${key}' failed:`, error);
+    const message = error instanceof Error ? error.message : "Something went wrong"
+    ui.setError(key , message)
+    alterAction.onError?.(error)
   } finally {
-    setLoading(loadingKey, false);
+    ui.setLoading(key, false)
   }
 }
