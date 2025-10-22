@@ -1,5 +1,5 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useMockAuth } from "../store/auth/useMockAuth";
+import { useMockAuth } from "../../store/auth/useMockAuth";
 import { useEffect } from "react";
 
 export default function MockLogin() {

@@ -1,6 +1,6 @@
 "use client";
-import LoginButton from "./component/LoginButton";
-import MockLogin from "./component/MockLogin";
+import LoginButton from "./component/button/LoginButton";
+import MockLogin from "./component/button/MockLogin";
 import { HeartHandshake } from 'lucide-react';
 
 export default function Home() {

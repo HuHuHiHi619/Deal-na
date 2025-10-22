@@ -23,13 +23,11 @@ export const useUiStore = create<UiState>((set, get) => ({
 
   // Loading actions
   setLoading: (key, value) => set((state) => ({ loading : { ...state.loading, [key] : value } })),
-
   isLoading : (key) => !!get().loading[key],
 
+  // Error actions
   setError : (key , message) => set((state) => ({ ...state.error , [key] : message })),
-
   getError : (key) => get().error[key] || null,
-
   clearAll : () => set({ error : {} , loading : {} }),
 
 }));

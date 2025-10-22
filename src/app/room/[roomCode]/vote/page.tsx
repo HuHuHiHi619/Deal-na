@@ -5,41 +5,53 @@ import { useRoomReadyStore } from "@/app/store/room/useRoomReadyStore";
 import { useRoom } from "@/app/store/room/useRoomStore";
 import { useVoteStore } from "@/app/store/vote/useVoteStore";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useMemo } from "react";
-import ReadyButton from "@/app/component/ReadyButton";
-import VoteOptionItem from "@/app/component/VoteOptionItems";
+import React, { useEffect } from "react";
+import ReadyButton from "@/app/component/button/ReadyButton";
+import VoteOptionItem from "@/app/component/vote/VoteOptionItems";
+import { useVoteStats } from "@/app/hooks/useVoteStats";
+import { useUiStore } from "@/app/store/useUiStore";
+import LoadingPage from "@/app/component/LoadingPage";
 
 interface VoteOptionsProps {
   handleDeleteOption: (optionId: string) => void;
 }
 
-const MAX_VOTE = 3;
-
 const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
   const { options } = useOptionStore();
   const { mockUser } = useMockAuth();
   const { votes, createVote, deleteVote } = useVoteStore();
-  const { members} = useRoomMemberStore();
-  const { readyMembers } = useRoomReadyStore();
+  const { readyMembers , totalMembers} = useRoomReadyStore();
+  const { setLoading , isLoading } = useUiStore();
   const router = useRouter();
 
-  const votesArr = Array.isArray(votes) ? votes : [];
-
-  const myVotes = useMemo(
-    () => votesArr.filter((v) => v.user_id === mockUser?.id),
-    [votes, mockUser?.id]
-  );
-
-  const remainingVotes = MAX_VOTE - myVotes.length;
+  const { myVotes , remainingVotes } = useVoteStats({
+    votes ,
+    mockUserId : mockUser?.id ?? '',
+    maxVotes : 3
+  })
 
   useEffect(() => {
     const roomCode = useRoom.getState().currentRoom?.roomCode || "";
-    if (members.length > 0 && members.length === readyMembers.length) {
-      router.push(`/room/${roomCode}/result`);
+
+    console.log(`Ready: ${readyMembers.length}/${totalMembers}`);
+
+    if (totalMembers >= 2 && readyMembers.length === totalMembers) {
+      setLoading('resultLoading', true);
+
+    const timeout = setTimeout(() => {
+        router.push(`/room/${roomCode}/result`);
+      },1000)
+      return () => clearTimeout(timeout)
     }
-  }, [members, readyMembers]);
+  }, [ readyMembers, totalMembers ]);
 
   if (!mockUser) return;
+
+  if (isLoading('resultLoading')) {
+    return (
+      <LoadingPage title="Loading..." subtitle="please wait" />
+    );
+  }
 
   return (
         <div className="mb-8">

@@ -28,14 +28,13 @@ export interface AuthState {
   session: Session | null;
   setUser: (user: AuthUser | null) => void;
   setSession: (session: Session | null) => void;
-  loginWithFacebook : () => Promise<void>;
+  loginWithFacebook: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 export const useAuth = create<AuthState>((set) => ({
   user: null,
   session: null,
- 
 
   setUser: (user: AuthUser | null) => set({ user }),
   setSession: (session: Session | null) =>
@@ -43,36 +42,19 @@ export const useAuth = create<AuthState>((set) => ({
       session,
       user: session?.user,
     }),
- 
+
   loginWithFacebook: async () => {
-    useUiStore.getState().setLoading('authLoading', true)
-    try{
-        const { data , error } = await supabase.auth.signInWithOAuth({
-            provider : 'facebook',
-            options : {
-                redirectTo : 'http://localhost:3000/room'
-            }
-        })
-        if(error) throw error
-        console.log(data)
-    }catch(error){
-        console.error(error)
-    } finally {
-       useUiStore.getState().setLoading('authLoading', false)
-    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "facebook",
+      options: {
+        redirectTo: "http://localhost:3000/room",
+      },
+    });
+    if (error) throw error;
   },
 
   signOut: async () => {
-    useUiStore.getState().setLoading('authLoading', true)
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (!error) {
-        set({ user: null, session: null });
-      }
-    } catch (error) {
-      console.error('Sign out error:', error)
-    } finally {
-      useUiStore.getState().setLoading('authLoading', false)
-    }
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
   },
 }));

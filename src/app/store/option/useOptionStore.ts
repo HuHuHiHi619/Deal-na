@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { useRoomForm } from "../useRoomForm";
 import { createOption, deleteOption } from "@/app/services/options";
 import { actionWrapper } from "@/app/utils/actionWrapper";
+import { useRoomMemberStore } from "../room/useRoomMemberStore";
 
 export interface Option {
   id: string;
@@ -52,6 +53,7 @@ export const useOptionStore = create<OptionState>((set, get) => ({
       }
     })
   },
+  
   createOption: async () => {
     const state = useRoomForm.getState();
     const validOptions = state.optionsInput.filter((option) => option !== "");

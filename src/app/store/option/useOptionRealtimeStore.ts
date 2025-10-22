@@ -5,7 +5,7 @@ import { supabase } from "@/app/lib/supabase";
 
 export interface RealtimeStore {
   channel: RealtimeChannel | null;
-  subscribe: (roomId: string) => void;
+  subscribe: (roomId: string , userId? : string | undefined) => void;
   unsubscribe: () => void;
   sendReady?: (userId: string) => Promise<boolean>;
 }

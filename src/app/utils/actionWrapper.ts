@@ -1,34 +1,26 @@
+// utils/actionWrapper.ts
 import { useUiStore } from "../store/useUiStore";
+import { executeWithUI } from "./actionHelper";
 import { getRequiredContext } from "./context";
 
 interface ActionFunction<T> {
   action: (context: { userId: string; roomId: string }) => Promise<T>;
-  onSuccess?: (data : T) => void;
-  onError? : (error : unknown) => void
+  onSuccess?: (data: T) => void;
+  onError?: (error: unknown) => void;
 }
 
 export async function actionWrapper<T>(
   key: string,
-  alterAction: ActionFunction<T>
+  { action, onSuccess, onError }: ActionFunction<T>
 ) {
-  const ui = useUiStore.getState()
-  ui.setLoading(key, true);
-  ui.setError(key, null);
-  
-  try {
-    const context = getRequiredContext();
-    const result = await alterAction.action(context);
-
-    if (alterAction.onSuccess) {
-      alterAction.onSuccess(result);
-    }
-    return result
-  } catch (error) {
-    console.error(`Action with key '${key}' failed:`, error);
-    const message = error instanceof Error ? error.message : "Something went wrong"
-    ui.setError(key , message)
-    alterAction.onError?.(error)
-  } finally {
-    ui.setLoading(key, false)
-  }
+  const { setLoading , setError } = useUiStore.getState()
+  return executeWithUI(
+    key,
+    async () => {
+      const context = getRequiredContext();
+      return action(context);
+    },
+    { setLoading, setError },
+    { onSuccess, onError }
+  );
 }

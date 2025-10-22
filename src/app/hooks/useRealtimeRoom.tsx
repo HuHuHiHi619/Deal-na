@@ -3,6 +3,7 @@ import { useOptionRealtimeStore } from "../store/option/useOptionRealtimeStore";
 import { useRoomRealtimeStore } from "../store/room/useRoomRealtimeStore";
 import { useVoteRealtimeStore } from "../store/vote/useVoteRealtimeStore";
 import { useRoomRealtimeReadyStore } from "../store/room/useRoomRealtimeReadyStore";
+import { useMockAuth } from "../store/auth/useMockAuth";
 
 export function useRealtimeRoom(roomId: string | undefined) {
   const { subscribe: subscribeRoom, unsubscribe: unsubscribeRoom } =
@@ -17,6 +18,7 @@ export function useRealtimeRoom(roomId: string | undefined) {
   console.log("🟢 useRealtimeRoom called with roomId:", roomId); // 👈 เพิ่ม log นี้
 
   const subscribedRoomIdRef = useRef<string | undefined>(undefined);
+  const { mockUser } = useMockAuth();
 
   const subscribeAll = async () => {
     if (!roomId) {
@@ -34,7 +36,7 @@ export function useRealtimeRoom(roomId: string | undefined) {
         subscribeRoom(roomId),
         subscribeOption(roomId),
         subscribeVote(roomId),
-        subscribeReady(roomId),
+        subscribeReady(roomId , mockUser?.id),
       ]);
       subscribedRoomIdRef.current = roomId;
     } catch (error) {
