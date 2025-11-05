@@ -1,13 +1,29 @@
-import { supabase } from "@/app/lib/supabase";
+import { getServerUser, supabase } from "@/app/lib/supabase";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   console.log("Request received at /api/room/create");
 
   try {
+
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return NextResponse.json({ error: "Missing Authorization header" }, { status: 401 });
+    }
+    const token = authHeader.replace("Bearer ", "");
+    console.log('authHeader and token :', authHeader, token);
+
+    const { user , error : userError } = await getServerUser(token)
+
+    if (!user || userError) {
+      return NextResponse.json({ error: "User not found or session invalid" }, { status: 401 });
+    }
+
+    const userId = user.id;
+
     const body = await req.json();
 
-    const { title, options, userId } = body;
+    const { title, options } = body;
 
     if (!title || !options || !Array.isArray(options) || options.length === 0)
       return NextResponse.json({ error: "Invalid options" });
@@ -75,7 +91,7 @@ export async function POST(req: Request) {
         id: newRoom.id,
         room_code: newRoom.room_code,
         title: newRoom.title,
-        url: `${origin}/room/${newRoom.room_code}`,
+        url: `${origin}/room/${newRoom.id}`,
       },
       options: newOptions,
       message: "Room created successfully",
@@ -88,3 +104,4 @@ export async function POST(req: Request) {
     );
   }
 }
+//   message: 'insert or update on table "room_members" violates foreign key constraint "room_members_user_id_fkey"'

@@ -1,4 +1,4 @@
-// components/vote/WinnersSection.tsx
+
 interface Winner {
   title: string;
   voteCount: number;
@@ -20,9 +20,9 @@ export function WinnersSection({ winners }: WinnersSectionProps) {
       </div>
       <p className="text-xl font-light text-gray-800">
         WINNER{winners.length > 1 ? "S" : ""}:{" "}
-        <span className="font-medium text-rose-600/90">
+        <span className="font-medium text-rose-600/90 line-clamp-2">
           {winners.map((w, index) => (
-            <span key={index}>
+            <span key={index} className="line-clamp-2">
               {w.title}
               {index < winners.length - 1 ? ", " : ""}
             </span>

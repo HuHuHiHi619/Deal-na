@@ -3,14 +3,15 @@ import { NextResponse } from "next/server";
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ roomCode: string }> }
+  { params }: { params: Promise<{ roomId: string }> }
 ) {
-  console.log("Request received at /api/room/[roomCode]");
+  console.log("Request received at /api/room/[roomId]");
   try {
-    const { roomCode } = await params;
+    const { roomId } = await params;
     const { userId } = await req.json();
+    console.log( 'roomId' ,roomId)
 
-    if (!roomCode || !userId) {
+    if (!roomId || !userId) {
       return NextResponse.json(
         { error: "Room code or user id not found" },
         { status: 400 }
@@ -20,27 +21,34 @@ export async function POST(
     const { data: room, error: roomError } = await supabase
       .from("room")
       .select("id , title")
-      .eq("room_code", roomCode)
+      .eq("id", roomId)
       .single();
 
     if (roomError || !room) {
+      console.log('Room not found');
       return NextResponse.json({ error: "Room not found" });
     }
 
-    const roomId = room.id;
-
+   
     const { data: existingMember, error: memberError } = await supabase
       .from("room_members")
       .select("id")
       .eq("room_id", roomId)
       .eq("user_id", userId)
       .maybeSingle();
+      
 
      if (existingMember) {
-      return NextResponse.json(
-        { error: "User already in room" },
-        { status: 400 }
-      );
+       console.log("✅ User already in room, returning existing data");
+      return NextResponse.json({
+        newMemberId: existingMember.id,
+        room: {
+          id: room.id,
+          title: room.title,
+          url: `/room/${room.id}`,
+        },
+        alreadyMember: true, 
+      });
     }
 
       if (memberError && memberError.code !== 'PGRST116') {
@@ -64,9 +72,8 @@ export async function POST(
       newMemberId: newMember.id,
       room: {
         id: room.id,
-        room_code: roomCode,
         title: room.title,
-        url: `/room/${roomCode}`,
+        url: `/room/${room.id}`,
       },
     });
   } catch (error) {

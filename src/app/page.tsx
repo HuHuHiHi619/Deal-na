@@ -1,24 +1,12 @@
 "use client";
+
 import LoginButton from "./component/button/LoginButton";
 import MockLogin from "./component/button/MockLogin";
 import { HeartHandshake } from 'lucide-react';
+import TestUserLoginButton from "./component/button/TestUserLoginButton";
 
 export default function Home() {
-  {
-    /* 
-    const { user, loading } = useAuth();
-    const router = useRouter();
-    
-    useEffect(() => {
-      if (!loading && user) {
-        router.replace("/rooms"); // ถ้า login แล้ว → ไป /topic
-      }
-    }, [user, loading, router]);
-    
-    if (loading) return <p>Loading...</p>;
-    */
-  }
-
+ 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       {/* CONTAINER */}
@@ -38,8 +26,11 @@ export default function Home() {
           </p>
         </div>
 
+        
+
         {/* BUTTON */}
         <div className="space-y-3 text-center">
+          <TestUserLoginButton />
           <LoginButton />
           <MockLogin />
         </div>

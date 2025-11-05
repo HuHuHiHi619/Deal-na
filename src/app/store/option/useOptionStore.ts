@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { useRoomForm } from "../useRoomForm";
 import { createOption, deleteOption } from "@/app/services/options";
 import { actionWrapper } from "@/app/utils/actionWrapper";
-import { useRoomMemberStore } from "../room/useRoomMemberStore";
 
 export interface Option {
   id: string;
@@ -19,7 +18,7 @@ export interface OptionState {
   removeOption: (optionId: string) => void;
 
   // API actions
-  fetchOption : (room_code : string) => Promise<void>
+  fetchOption : (roomId : string) => Promise<void>
   createOption: (
     roomId: string,
     title: string,
@@ -43,10 +42,10 @@ export const useOptionStore = create<OptionState>((set, get) => ({
   },
 
   // API
-  fetchOption : async (room_code : string) => {
+  fetchOption : async (roomId : string) => {
     await actionWrapper("fetchOptionsLoading",{
       action :async () => {
-        const response = await fetch(`/api/option/${room_code}`);
+        const response = await fetch(`/api/option/${roomId}`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         set({ options: data.options });

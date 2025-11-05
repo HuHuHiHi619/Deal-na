@@ -42,7 +42,7 @@ function OptionForm({ options, setOptions, addOption }: OptionFormProps) {
 
       <form className="space-y-3">
         {options.map((option: string, index: number) => (
-          <div key={index} className="flex items-center  space-x-4">
+          <div key={index} className="flex items-center  space-x-2">
             <div className="flex-shrink-0 w-6 h-6 bg-rose-100 rounded-full flex items-center justify-center">
               <span className=" font-medium text-rose-600">
                 {index + 1}
@@ -55,7 +55,7 @@ function OptionForm({ options, setOptions, addOption }: OptionFormProps) {
               onChange={(e) => handleOptionsChange(index, e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               name="options"
-              className="flex-1 px-4 py-3  border-2 border-rose-400 rounded-xl placeholder-rose-300 text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-700 focus:border-transparent transition-all duration-300"
+              className="flex-1 px-2 py-3  border-2 border-rose-400 rounded-xl placeholder-rose-300 text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-700 focus:border-transparent transition-all duration-300"
             />
           </div>
         ))}

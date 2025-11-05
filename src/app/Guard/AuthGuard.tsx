@@ -1,53 +1,62 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import { useAuth } from "../store/auth/useAuth";
-import { useUiStore } from "../store/useUiStore";
-import { useMockAuth } from "../store/auth/useMockAuth";
 import { usePathname, useRouter } from "next/navigation";
-
+import { useUiStore } from "../store/useUiStore";
 
 interface AuthGuardProps {
   children: ReactNode;
 }
 
-export default function AuthGuard({
-  children,
-}: AuthGuardProps) {
+export default function AuthGuard({ children }: AuthGuardProps) {
   const { user } = useAuth();
-  const { mockUser , hydrated } = useMockAuth();
-  const loading = useUiStore().isLoading("loadingSession");
+  const { loading } = useUiStore();
   const router = useRouter();
   const pathname = usePathname();
+  const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
-    if(hydrated && !mockUser){
-        router.replace(`/?redirect=${encodeURIComponent(pathname)}`);
+    // 1. Do nothing until the initial session check is complete.
+    if (loading.loadingSession) {
+      return;
     }
-  },[hydrated , mockUser , router , pathname]);
-  
-  if (!hydrated) {
+
+    // 2. Session check is done. If there's no user, redirect.
+    if (!user && !hasRedirectedRef.current) {
+      hasRedirectedRef.current = true;
+      console.log("AuthGuard: No user found. Redirecting to login.");
+      router.replace(`/?redirect=${encodeURIComponent(pathname)}`);
+    }
+
+    // 3. If a user exists, reset the ref for any future logouts.
+    if (user) {
+      hasRedirectedRef.current = false;
+    }
+  }, [user, loading.loadingSession, router, pathname]);
+
+  // 1. Show a full-page spinner while the session is being checked.
+  if (loading.loadingSession) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Checking session...</p>
         </div>
       </div>
     );
   }
 
-
-  if (!mockUser) {
+  // 2. Session is loaded, but no user. The useEffect is handling the redirect.
+  // Show a simple placeholder.
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to login...</p>
-        </div>
+        <p className="text-gray-600">Redirecting to login...</p>
       </div>
     );
   }
-  // Render children เมื่อผ่านเงื่อนไข authentication
+
+  // 3. Session is loaded AND we have a user. Show the protected content.
   return <>{children}</>;
 }

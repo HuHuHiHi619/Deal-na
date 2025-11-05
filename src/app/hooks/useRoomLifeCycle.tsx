@@ -1,100 +1,91 @@
 // hooks/useRoomLifecycle.ts
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRoom } from "@/app/store/room/useRoomStore";
-import { useMockAuth } from "@/app/store/auth/useMockAuth";
 import { useRealtimeRoom } from "@/app/hooks/useRealtimeRoom";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useAuth } from "../store/auth/useAuth";
 
-export function useRoomLifecycle(roomCode: string) {
-  const joiningRef = useRef(false);
-  const hasJoinedRef = useRef<string | null>(null);
-  
+export function useRoomLifecycle(roomId: string) {
   const { joinRoom, currentRoom, error, clearError, exitRoom } = useRoom();
-  const { subscribeAll, unsubscribeAll } = useRealtimeRoom(roomCode);
-  const { mockUser } = useMockAuth();
-  const router = useRouter();
+  const { subscribeAll, unsubscribeAll } = useRealtimeRoom(roomId);
+  const { user } = useAuth();
   const pathname = usePathname();
 
-  // ⭐ useEffect สำหรับ join room (ตรงตามโค้ดเดิม)
+  const [isJoining, setIsJoining] = useState(false);
+  const [isJoined, setIsJoined] = useState(false);
+
+  const lifecycleRef = useRef<{
+    isJoiningInternal: boolean;
+    hasJoinedInternal: boolean;
+    onRoomJoined: (() => void) | null;
+  }>({
+    isJoiningInternal: false,
+    hasJoinedInternal: false,
+    onRoomJoined: null,
+  });
+
+  const setOnRoomJoined = useCallback((callback: () => void) => {
+    lifecycleRef.current.onRoomJoined = callback;
+  }, []);
+
+  // 🔹 Effect สำหรับ join ห้อง
   useEffect(() => {
-    const isInRoomPage = pathname?.startsWith('/room/') && roomCode;
-    
-    if (!mockUser || !isInRoomPage) {
-      console.log("❌ Not in room page or no user");
-      return;
-    }
+    const isInRoomPage = pathname.startsWith("/room/") && !!roomId;
+    const lifecycle = lifecycleRef.current;
 
-    if (hasJoinedRef.current === roomCode) {
-      console.log("⏳ Already joined room:", roomCode);
-      return;
-    }
+    if (!isInRoomPage || !user) return;
+    if (lifecycle.isJoiningInternal || lifecycle.hasJoinedInternal) return;
 
-    if (currentRoom && currentRoom.roomCode !== roomCode) {
-      console.log("🔄 Switching rooms, leaving current room first");
-      exitRoom();
-    }
+    lifecycle.isJoiningInternal = true;
+    setIsJoining(true);
 
-    if (currentRoom?.roomCode === roomCode) {
-      console.log("✅ Already in this room");
-      hasJoinedRef.current = roomCode;
-      return;
-    }
+    console.log("Joining room...", roomId);
 
-    if (joiningRef.current) {
-      console.log("⏳ Join already in progress");
-      return;
-    }
+    joinRoom(roomId, user.id)
+      .then(() => {
+        lifecycle.hasJoinedInternal = true;
+        lifecycle.isJoiningInternal = false;
+        setIsJoining(false);
+        setIsJoined(true);
 
-    console.log("🟡 Starting to join room:", roomCode);
-    joiningRef.current = true;
-   
-    const joinSetup = async () => {
-      try {
-        await joinRoom(roomCode, mockUser.id);
-        console.log("✅ Successfully joined room");
-        hasJoinedRef.current = roomCode; 
-      } catch (err) {
-        console.error("❌ Failed to join room:", err);
-        hasJoinedRef.current = null;
-        setTimeout(() => router.push("/"), 2000);
-      } finally {
-        joiningRef.current = false;
-      }
-    };
+        console.log("Room joined");
+        subscribeAll();
+        lifecycle.onRoomJoined?.();
+      })
+      .catch((err) => {
+        console.error("Failed to join room:", err);
+        lifecycle.isJoiningInternal = false;
+        setIsJoining(false);
+      });
 
-    joinSetup();
+    // ❌ ไม่ต้อง return cleanup function ที่นี่
+  }, [roomId, user?.id, pathname, joinRoom, subscribeAll]);
 
-    return () => {
-      if(currentRoom?.roomCode === roomCode) {
-        console.log('Cleanup : leaving room:', roomCode);
-        exitRoom();
-      }
-      hasJoinedRef.current = null;
-      joiningRef.current = false;
-    }
-  }, [roomCode, mockUser?.id, pathname]); // ⭐ dependency เหมือนโค้ดเดิม
-
-  // ⭐ useEffect แยกสำหรับ subscribe (เหมือนโค้ดเดิม)
+  // 🔹 Effect สำหรับ exit ห้องเมื่อเปลี่ยนหน้า
   useEffect(() => {
-    if (!currentRoom || currentRoom.roomCode !== roomCode) {
-      console.log("❌ Not in room yet, skipping subscription");
-      return;
-    }
+    const isInRoomPage = pathname.startsWith("/room/") && !!roomId;
+    const lifecycle = lifecycleRef.current;
 
-    console.log("🟢 Setting up subscriptions for room:", roomCode);
-    subscribeAll();
+    if (isInRoomPage || !isJoined) return;
 
-    return () => {
-      console.log("🔴 Cleaning up subscriptions for room:", roomCode);
-      unsubscribeAll();
-    };
-  }, [currentRoom?.roomCode, roomCode]); // ⭐ dependency เหมือนโค้ดเดิม
+    console.log("User left room page, cleaning up...");
+
+    setIsJoined(false);
+    setIsJoining(false);
+    lifecycle.hasJoinedInternal = false;
+    lifecycle.isJoiningInternal = false;
+
+    exitRoom();
+    unsubscribeAll();
+  }, [pathname, isJoined, exitRoom, unsubscribeAll, roomId]);
 
   return {
-    isJoining: joiningRef.current,
-    currentRoom,
+    isJoining,
+    isJoined,
     error,
+    currentRoom,
+    user,
     clearError,
-    mockUser,
+    setOnRoomJoined,
   };
 }

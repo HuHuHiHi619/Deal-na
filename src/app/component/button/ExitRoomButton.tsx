@@ -7,9 +7,9 @@ import { useAsyncAction } from "../../hooks/useAsyncAction";
 
 function ExitRoomButton() {
   const router = useRouter();
-  const { roomCode }: { roomCode: string } = useParams();
+  const { roomId }: { roomId: string } = useParams();
   const { exitRoom } = useRoom();
-  const { unsubscribeAll } = useRealtimeRoom(roomCode);
+  const { unsubscribeAll } = useRealtimeRoom(roomId);
 
   const { execute, isLoading, error } = useAsyncAction("exitRoom", {
     onSuccess: () => {

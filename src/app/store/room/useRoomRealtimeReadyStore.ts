@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { supabase } from "@/app/lib/supabase";
 import { useRoomReadyStore } from "./useRoomReadyStore";
 import { RealtimeStore } from "../option/useOptionRealtimeStore";
-import { stat } from "fs";
+
 
 interface PresencePayload {
   userId: string;
@@ -13,86 +13,109 @@ interface PresencePayload {
 
 export const useRoomRealtimeReadyStore = create<RealtimeStore>((set, get) => ({
   channel: null,
-  subscribe: (roomId: string, userId?: string) => {
-    // ตรงนี้มีปัญหา
-    console.log(
-      `🎯 [READY-STORE] subscribe called with roomId: ${roomId}, userId: ${userId}`
-    );
-    const { setReady } = useRoomReadyStore.getState();
+  subscribe: (roomId: string, userId?: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      console.log(
+        `🎯 [READY-STORE] subscribe called with roomId: ${roomId}, userId: ${userId}`
+      );
+      const { setReady } = useRoomReadyStore.getState();
 
-    const presenceConfig = userId ? { key: userId } : undefined;
+      const presenceConfig = userId ? { key: userId } : undefined;
 
-    const ch = supabase
-      .channel(`room-ready-${roomId}`, {
-        config: {
-          ...(presenceConfig ? { presence: presenceConfig } : {}),
-        },
-      })
-      .on("presence", { event: "sync" }, () => {
-        const state = ch.presenceState<PresencePayload>();
-        console.log("🟡 Presence sync event received:", state);
-
-        const allUsers = Object.keys(state);
-        const totalInRoom = allUsers.length;
-        console.log(`🟡 All users in room : ${totalInRoom} :`, allUsers);
-        useRoomReadyStore.getState().setTotalMembers(totalInRoom);
-
-        const readyUsers = allUsers.filter(
-          (key) => state[key]?.[0]?.isReady === true
-        );
-        console.log("🟡 Ready users in room :", readyUsers);
-        setReady(readyUsers);
-      })
-      .on("presence", { event: "join" }, ({ key, newPresences }) => {
-        console.log("🟡 Presence join event received:", key, newPresences);
-      })
-      .on("presence", { event: "leave" }, ({ key, leftPresences }) => {
-        console.log("🟡 Presence leave event received:", key, leftPresences);
-      })
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          console.log(`🟡 Subscribed to room-ready-${roomId} channel`);
-
-          set({ channel: ch });
-
-          // Track user in room
-          if (userId) {
-            try {
-              await ch.track({
-                userId,
-                isReady: false,
-                joinedAt: new Date().toISOString(),
-              });
-            } catch (err) {
-              console.warn(
-                "⚠️ [READY-STORE] track failed (userId present) :",
-                err
-              );
-            }
-          } else {
-            console.log(
-              "⚠️ [READY-STORE] No userId provided — skipping track()"
-            );
-          }
-
-          // sync state
+      const ch = supabase
+        .channel(`room-ready-${roomId}`, {
+          config: {
+            ...(presenceConfig ? { presence: presenceConfig } : {}),
+          },
+        })
+        .on("presence", { event: "sync" }, () => {
           const state = ch.presenceState<PresencePayload>();
+          console.log("🟡 Presence sync event received:", state);
+
           const allUsers = Object.keys(state);
           const totalInRoom = allUsers.length;
+          console.log(`🟡 All users in room : ${totalInRoom} :`, allUsers);
+          useRoomReadyStore.getState().setTotalMembers(totalInRoom);
+
           const readyUsers = allUsers.filter(
             (key) => state[key]?.[0]?.isReady === true
           );
+          console.log("🟡 Ready users in room :", readyUsers);
+          setReady(readyUsers);
+        })
+        .on("presence", { event: "join" }, ({ key, newPresences }) => {
+          console.log("🟡 Presence join event received:", key, newPresences);
+        })
+        .on("presence", { event: "leave" }, ({ key, leftPresences }) => {
+          console.log("🟡 Presence leave event received:", key, leftPresences);
+        })
+        .subscribe(async (status) => {
+          if (status === "SUBSCRIBED") {
+            console.log(`🟡 Subscribed to room-ready-${roomId} channel`);
 
-          useRoomReadyStore.getState().setTotalMembers(totalInRoom);
-          if (readyUsers.length > 0) setReady(readyUsers);
-        } else if (status === "CHANNEL_ERROR") {
-          console.error(`❌ Error subscribing to room-ready-${roomId} channel`);
-        } else if (status === "TIMED_OUT") {
-          console.error(
-            `❌ Timed out subscribing to room-ready-${roomId} channel`
-          );
-        }
-      });
+            set({ channel: ch });
+
+            // Track user in room
+            if (userId) {
+              try {
+                await ch.track({
+                  userId,
+                  isReady: false,
+                  joinedAt: new Date().toISOString(),
+                });
+
+                await new Promise<void>((resolveTrack) => {
+                  const checkState = () => {
+                    const state = ch.presenceState<PresencePayload>();
+                    if(state[userId]){
+                      console.log('user presence confirmed')
+                      resolveTrack()
+                    } else {
+                      setTimeout(() => {
+                        checkState()
+                      }, 100);
+                    }
+                  }
+                  checkState()
+                })
+
+              } catch (err) {
+                console.warn(
+                  "⚠️ [READY-STORE] track failed (userId present) :",
+                  err
+                );
+              }
+            } else {
+              console.log(
+                "⚠️ [READY-STORE] No userId provided — skipping track()"
+              );
+            }
+
+            // sync state
+            const state = ch.presenceState<PresencePayload>();
+            const allUsers = Object.keys(state);
+            const totalInRoom = allUsers.length;
+            const readyUsers = allUsers.filter(
+              (key) => state[key]?.[0]?.isReady === true
+            );
+
+            useRoomReadyStore.getState().setTotalMembers(totalInRoom);
+            if (readyUsers.length > 0) setReady(readyUsers);
+
+            resolve();
+          } else if (status === "CHANNEL_ERROR") {
+            console.error(
+              `❌ Error subscribing to room-ready-${roomId} channel`
+            );
+            reject(new Error("Channel error"));
+          } else if (status === "TIMED_OUT") {
+            console.error(
+              `❌ Timed out subscribing to room-ready-${roomId} channel`
+            );
+            reject(new Error("Channel timeout"));
+          }
+        });
+    });
   },
 
   sendReady: async (userId: string) => {
@@ -104,6 +127,11 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set, get) => ({
     if (!channel) {
       console.error("❌ Channel not found");
       return false;
+    }
+
+     if (channel.state !== "joined") {
+      console.error("❌ Channel not joined, current state:", channel.state);
+      throw new Error("Channel not ready");
     }
 
     try {

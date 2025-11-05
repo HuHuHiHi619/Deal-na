@@ -1,7 +1,6 @@
 import { Session, User } from "@supabase/supabase-js";
 import { create } from "zustand";
 import { supabase } from "../../lib/supabase";
-import { useUiStore } from "../useUiStore";
 
 export interface FacebookUserMetadata {
   avatar_url?: string;
@@ -46,9 +45,6 @@ export const useAuth = create<AuthState>((set) => ({
   loginWithFacebook: async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "facebook",
-      options: {
-        redirectTo: "http://localhost:3000/room",
-      },
     });
     if (error) throw error;
   },

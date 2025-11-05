@@ -1,4 +1,3 @@
-// components/vote/VoteButton.tsx
 import React from "react";
 
 interface VoteButtonProps {

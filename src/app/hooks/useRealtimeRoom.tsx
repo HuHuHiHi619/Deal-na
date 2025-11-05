@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { useOptionRealtimeStore } from "../store/option/useOptionRealtimeStore";
 import { useRoomRealtimeStore } from "../store/room/useRoomRealtimeStore";
 import { useVoteRealtimeStore } from "../store/vote/useVoteRealtimeStore";
 import { useRoomRealtimeReadyStore } from "../store/room/useRoomRealtimeReadyStore";
-import { useMockAuth } from "../store/auth/useMockAuth";
+import { useAuth } from "../store/auth/useAuth";
 
 export function useRealtimeRoom(roomId: string | undefined) {
   const { subscribe: subscribeRoom, unsubscribe: unsubscribeRoom } =
@@ -18,31 +18,45 @@ export function useRealtimeRoom(roomId: string | undefined) {
   console.log("🟢 useRealtimeRoom called with roomId:", roomId); // 👈 เพิ่ม log นี้
 
   const subscribedRoomIdRef = useRef<string | undefined>(undefined);
-  const { mockUser } = useMockAuth();
+  const { user } = useAuth();
 
-  const subscribeAll = async () => {
+  const subscribeAll =  useCallback(async () => {
+
     if (!roomId) {
       console.log("❌ No roomId, skipping subscription");
       return;
     }
 
-    if (subscribedRoomIdRef.current === roomId) {
-      console.log("Already subscribed to roomId:", roomId);
+    if (!user?.id) {
+      console.log("❌ No user, skipping subscription");
       return;
     }
 
+    if (subscribedRoomIdRef.current === roomId) {
+      console.log("✅ Already subscribed to roomId:", roomId);
+      return;
+    }
+
+    console.log("📡 Starting subscriptions for room:", roomId);
+
     try {
-      await Promise.all([
+      // ✅ รอให้ทุก subscription เสร็จ
+      await Promise.allSettled([
         subscribeRoom(roomId),
         subscribeOption(roomId),
         subscribeVote(roomId),
-        subscribeReady(roomId , mockUser?.id),
+        subscribeReady(roomId, user.id),
       ]);
+      
       subscribedRoomIdRef.current = roomId;
+      console.log("✅ All subscriptions completed for room:", roomId);
+      
     } catch (error) {
-      console.error("Subscription error:", error);
+      console.error("❌ Subscription error:", error);
+      subscribedRoomIdRef.current = undefined;
     }
-  };
+  },[roomId , user?.id , subscribeRoom , subscribeOption , subscribeVote , subscribeReady])
+  ;
 
   const unsubscribeAll = useCallback(async () => {
     console.log("🟡 Manual unsubscribe called");

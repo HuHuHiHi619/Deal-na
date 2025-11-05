@@ -1,18 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useAuth } from "../../store/auth/useAuth";
 import { Facebook } from "lucide-react";
 import { useAsyncAction } from "../../hooks/useAsyncAction";
 
-export default function LoginButton() {
-  const { loginWithFacebook } = useAuth();
-  const router = useRouter();
 
-const { execute, isLoading , error } = useAsyncAction("loginWithFacebook", {
-  onSuccess: () => {
-    router.push("/room");
-  },
+export default function LoginButton() {
+const { loginWithFacebook } = useAuth();
+
+const { execute, isLoading } = useAsyncAction("loginWithFacebook", {
   onError: (err) => {
     console.log("Login with facebook error:", err);
   },

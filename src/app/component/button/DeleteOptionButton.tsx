@@ -1,4 +1,3 @@
-// components/vote/DeleteOptionButton.tsx
 import React from "react";
 import { Trash } from "lucide-react";
 

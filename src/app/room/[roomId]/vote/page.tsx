@@ -11,6 +11,7 @@ import VoteOptionItem from "@/app/component/vote/VoteOptionItems";
 import { useVoteStats } from "@/app/hooks/useVoteStats";
 import { useUiStore } from "@/app/store/useUiStore";
 import LoadingPage from "@/app/component/LoadingPage";
+import { useAuth } from "@/app/store/auth/useAuth";
 
 interface VoteOptionsProps {
   handleDeleteOption: (optionId: string) => void;
@@ -18,7 +19,7 @@ interface VoteOptionsProps {
 
 const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
   const { options } = useOptionStore();
-  const { mockUser } = useMockAuth();
+  const { user } = useAuth();
   const { votes, createVote, deleteVote } = useVoteStore();
   const { readyMembers , totalMembers} = useRoomReadyStore();
   const { setLoading , isLoading } = useUiStore();
@@ -26,12 +27,12 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
 
   const { myVotes , remainingVotes } = useVoteStats({
     votes ,
-    mockUserId : mockUser?.id ?? '',
+    userId : user?.id ?? '',
     maxVotes : 3
   })
 
   useEffect(() => {
-    const roomCode = useRoom.getState().currentRoom?.roomCode || "";
+    const roomId = useRoom.getState().currentRoom?.id || "";
 
     console.log(`Ready: ${readyMembers.length}/${totalMembers}`);
 
@@ -39,13 +40,13 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
       setLoading('resultLoading', true);
 
     const timeout = setTimeout(() => {
-        router.push(`/room/${roomCode}/result`);
+        router.push(`/room/${roomId}/result`);
       },1000)
       return () => clearTimeout(timeout)
     }
   }, [ readyMembers, totalMembers ]);
 
-  if (!mockUser) return;
+  if (!user) return;
 
   if (isLoading('resultLoading')) {
     return (
@@ -62,7 +63,7 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
           <VoteOptionItem
             key={option.id}
             option={option}
-            mockUser={mockUser}
+            user={user}
             myVotes={myVotes}
             remainingVotes={remainingVotes}
             handleAddVote={createVote}
@@ -72,7 +73,7 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
         ))}
 
         <div className="pt-4">
-          <ReadyButton mockUserId={mockUser.id} />
+          <ReadyButton userId={user.id} />
         </div>
       </div>
     </div>

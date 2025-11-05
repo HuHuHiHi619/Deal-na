@@ -1,15 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useMockAuth } from "../store/auth/useMockAuth";
+
+import { useState } from "react";
 import { useRoomForm } from "../store/useRoomForm";
+import { useAuth } from "../store/auth/useAuth";
 
 export default function TopicPage() {
-  const router = useRouter();
   const [rawTitle, setRawTitle] = useState<string>("");
 
-  const { mockUser } = useMockAuth();
+  const { user } = useAuth();
   const { setTitle } = useRoomForm();
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -18,24 +17,17 @@ export default function TopicPage() {
     setTitle(rawTitle);
   };
 
-  useEffect(() => {
-    if (!mockUser) {
-      router.push("/");
-    }
-    console.log("mockUSER", mockUser);
-  }, [mockUser]);
-
-  if (!mockUser) return null;
+  if (!user) return null;
   return (
     <div className="flex items-center justify-center p-4">
       {/* container  */}
       <div className="w-full max-w-md bg-rose-100 rounded-2xl p-4 md:p-12 space-y-4 shadow-lg">
         <h2 className="text-2xl font-bold text-rose-700 mb-2">
-          Create Today's Topic
+          Create Topic
         </h2>
         <p className="text-sm text-gray-600">
-          Started by{" "}
-          <span className="font-medium text-rose-600">{mockUser.username}</span>
+          As{" "}
+          <span className="font-medium text-rose-600">{user.user_metadata.name || 'test user'}</span>
         </p>
 
       <form onSubmit={handleFormSubmit} className="space-y-4">

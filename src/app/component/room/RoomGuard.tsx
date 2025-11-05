@@ -1,4 +1,3 @@
-// components/RoomGuard.tsx
 "use client";
 
 import LoadingPage from "@/app/component/LoadingPage";
@@ -6,38 +5,44 @@ import ErrorPage from "@/app/component/ErrorPage";
 import { useRouter } from "next/navigation";
 
 interface RoomGuardProps {
+  isJoined : boolean
   isJoining: boolean;
-  currentRoom: any;
-  roomCode: string;
-  error: string | null;
+  roomId: string;
+  error: string | Error | null;
   clearError: () => void;
-  mockUser: any;
+  user: any;
   children: React.ReactNode;
+  currentRoom: any
 }
 
 export function RoomGuard({
   currentRoom,
+  isJoined,
   isJoining,
-  roomCode,
+  roomId,
   error,
   clearError,
-  mockUser,
+  user,
   children,
 }: RoomGuardProps) {
   const router = useRouter();
-
+  const errorMessage = error instanceof Error ? error.message : error;
   // 1️⃣ ยังไม่มี user
-  if (!mockUser) {
+  if (!user) {
     return (
       <LoadingPage title="Checking authentication..." subtitle="please wait" />
     );
   }
+  if (!currentRoom) {
+  console.log("⚠️ RoomGuard detected missing room", { currentRoom, isJoining, error });
+}
 
   // 2️⃣ มี error
-  if (error) {
+  if (errorMessage) {
+     console.log("🚨 error guard triggered:", errorMessage);
     return (
       <ErrorPage
-        error={error}
+        error={errorMessage}
         onRetry={() => {
           clearError();
           router.push("/");
@@ -47,10 +52,10 @@ export function RoomGuard({
   }
 
   // 3️⃣ ยัง join ไม่เสร็จ
-  if (isJoining || !currentRoom || currentRoom.roomCode !== roomCode) {
+  if (isJoining || !isJoined) {
     return (
       <LoadingPage
-        title={`Joining room ${roomCode}...`}
+        title={`Joining room ${roomId}...`}
         subtitle={isJoining ? "Connecting..." : "Setting up..."}
       />
     );

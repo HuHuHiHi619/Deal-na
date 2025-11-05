@@ -2,18 +2,18 @@ import { useMemo } from "react"
 
 interface UseVoteStatsProps{
     votes : any[]
-    mockUserId : string
+    userId : string
     maxVotes : number
 }
 
 export const useVoteStats = ({
     votes,
-    mockUserId,
+    userId,
     maxVotes = 3
 } : UseVoteStatsProps) => {
     return useMemo(() => {
         const votesArr = Array.isArray(votes) ? votes : []
-        const myVotes = votesArr.filter((v) => v.user_id === mockUserId)
+        const myVotes = votesArr.filter((v) => v.user_id === userId)
         const remainingVotes = maxVotes - myVotes.length
 
         return { 
@@ -22,5 +22,5 @@ export const useVoteStats = ({
             totalVotes: votesArr.length,
             hasMaxVotes : remainingVotes <= 0 
         } 
-    },[votes , mockUserId , maxVotes])
+    },[votes , userId , maxVotes])
 }

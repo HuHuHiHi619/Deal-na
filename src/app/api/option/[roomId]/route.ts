@@ -5,20 +5,20 @@ export async function GET(req: Request) {
   
   const url = new URL(req.url);
   const pathSegments = url.pathname.split('/');
-  const room_code = pathSegments[pathSegments.length - 1]; // ค่าสุดท้าย
+  const roomId = pathSegments[pathSegments.length - 1]; 
   
-  if (!room_code) {
+  if (!roomId) {
     return NextResponse.json({ error: 'Room Code not found' }, { status: 400 });
   }
 
-  console.log('room_code parsed from URL:', room_code);
+  console.log('roomId parsed from URL:', roomId);
 
-  // --- Supabase query ตามปกติ ---
+
   try {
     const { data: room, error: roomError } = await supabase
       .from('room')
       .select('id')
-      .eq('room_code', room_code)
+      .eq('id', roomId)
       .single();
 
     if (roomError) throw roomError;
@@ -30,11 +30,14 @@ export async function GET(req: Request) {
       .eq('room_id', room.id)
       .order('id', { ascending: true });
 
-    if (optionsError) throw optionsError;
+    if (optionsError) {
+      console.log("optionsError :", optionsError.message);
+      throw optionsError;
+    };
 
     return NextResponse.json({ options });
   } catch (error) {
-    console.error(error);
+    console.error("Get option api Error",error);
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
   }
 }

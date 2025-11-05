@@ -40,7 +40,7 @@ interface RoomState {
     options: string[],
     userId: string
   ) => Promise<void>;
-  joinRoom: (roomCode: string, userId: string) => Promise<any>;
+  joinRoom: (roomId: string, userId: string) => Promise<any>;
   exitRoom: () => void;
 }
 
@@ -61,7 +61,7 @@ export const useRoom = create<RoomState>()(
       createRoom: async (title: string, options: string[], userId: string) => {
         useUiStore.getState().setLoading("createRoomLoading", true);
         set({ error: null });
-        console.log("create room input", { title, options });
+        console.log("create room input", { title, options , userId });
 
         try {
           const data = await createRoomAPI(title, options, userId);
@@ -94,7 +94,7 @@ export const useRoom = create<RoomState>()(
       },
 
       // Join room
-      joinRoom: async (roomCode: string, userId: string) => {
+      joinRoom: async (roomId: string, userId: string) => {
         useUiStore.getState().setLoading("joinRoomLoading", true);
         
         const state = get()
@@ -105,7 +105,7 @@ export const useRoom = create<RoomState>()(
         
         set({ error: null , isJoin : true });
         try {
-          const data = await joinRoomAPI(roomCode, userId);
+          const data = await joinRoomAPI(roomId, userId);
           console.log("📦 joinRoom API response:", data);
 
           // 👇 ตรวจสอบก่อนว่ามี error จาก API หรือไม่
@@ -127,7 +127,7 @@ export const useRoom = create<RoomState>()(
           }
           const room: Room = {
             id: roomData.id,
-            roomCode: roomData.room_code || roomData.roomCode || roomCode,
+            roomCode: roomData.room_code || roomData.roomCode ,
             title: roomData.title || "Untitled Room",
             status: roomData.status || "open",
             createdAt:
@@ -138,7 +138,7 @@ export const useRoom = create<RoomState>()(
               roomData.expiredAt ||
               roomData.expired_at ||
               new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-            url: roomData.url || `/room/${roomCode}`,
+            url: roomData.url || `/room/${roomId}`,
             options: data.options || [],
           };
 

@@ -1,4 +1,4 @@
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMockAuth } from "../../store/auth/useMockAuth";
 import { useEffect } from "react";
 

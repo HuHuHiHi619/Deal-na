@@ -1,5 +1,6 @@
 "use client";
 import ExitRoomButton from "@/app/component/button/ExitRoomButton";
+import LogoutButton from "@/app/component/button/LogoutButton";
 import { VoteResultsList } from "@/app/component/vote/VoteResultList";
 import { WinnersSection } from "@/app/component/vote/WinnerSection";
 import { useVoteResult } from "@/app/hooks/useVoteResult";
@@ -40,6 +41,7 @@ function page() {
       {/* Exit Button */}
       <div className="mt-10 pt-6 border-t border-white/30">
         <ExitRoomButton />
+        <LogoutButton />
       </div>
     </div>
   );

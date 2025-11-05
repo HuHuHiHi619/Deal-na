@@ -1,7 +1,6 @@
 import React from "react";
 import OptionForm from "./form/page";
 import { useRoomForm } from "../store/useRoomForm";
-// Import the new component
 
 function OptionsPage() {
   const { titleInput, optionsInput, setOptionsInput, addOptionInput } =

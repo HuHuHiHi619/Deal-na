@@ -1,4 +1,4 @@
-import { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { RealtimeChannel } from "@supabase/supabase-js";
 import { create } from "zustand";
 import { Option, useOptionStore } from "./useOptionStore";
 import { supabase } from "@/app/lib/supabase";
@@ -13,9 +13,11 @@ export interface RealtimeStore {
 export const useOptionRealtimeStore = create<RealtimeStore>(
   (set, get) => ({
     channel: null,
-    subscribe: (roomId: string) => {
-      const { addOption, removeOption } = useOptionStore.getState();
-      const channel = supabase
+    subscribe: (roomId: string) : Promise<void> => {
+      return new Promise((resolve , reject) => {
+        
+        const { addOption, removeOption } = useOptionStore.getState();
+        const channel = supabase
         .channel("options")
         .on<Option>(
           "postgres_changes",
@@ -29,7 +31,7 @@ export const useOptionRealtimeStore = create<RealtimeStore>(
             addOption(payload.new);
           }
         )
-
+        
         .on(
           "postgres_changes",
           {
@@ -42,14 +44,20 @@ export const useOptionRealtimeStore = create<RealtimeStore>(
             removeOption(payload.old.id);
           }
         )
-        .subscribe();
+       .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log(`✅ Subscribed to options:${roomId}`);
+            resolve();
+          }
+        });
         set({ channel })
-    },
-
-    unsubscribe: () => {
-      const { channel } = get()
-      if (channel) supabase.removeChannel(channel);
-      set({ channel: null });
-    },
+      })
+      },
+      
+      unsubscribe: () => {
+        const { channel } = get()
+        if (channel) supabase.removeChannel(channel);
+        set({ channel: null });
+      },
   })
 );

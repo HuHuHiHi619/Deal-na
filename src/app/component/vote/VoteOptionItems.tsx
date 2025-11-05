@@ -8,7 +8,7 @@ import { DeleteOptionButton } from "../button/DeleteOptionButton";
 
 interface VoteOptionItemProps {
   option: any;
-  mockUser: any;
+  user: any;
   myVotes: any[];
   remainingVotes: number;
   handleAddVote: (optionId: string) => void;
@@ -18,14 +18,14 @@ interface VoteOptionItemProps {
 
 export const VoteOptionItem: React.FC<VoteOptionItemProps> = ({
   option,
-  mockUser,
+  user,
   myVotes,
   remainingVotes,
   handleAddVote,
   handleRemoveVote,
   handleDeleteOption,
 }) => {
-  const isMyOption = option.user_id === mockUser?.id;
+  const isMyOption = option.user_id === user?.id;
   const myVoteCount = myVotes.filter((vote) => vote.option_id === option.id).length;
   const myVoteForThisOption = myVotes.find((vote) => vote.option_id === option.id);
 
@@ -37,12 +37,16 @@ export const VoteOptionItem: React.FC<VoteOptionItemProps> = ({
           : "bg-indigo-100 border-indigo-200/40"
       } hover:scale-[1.02]`}
     >
-      <div className="flex items-center space-x-4">
+      {/* เนื้อหา - อยู่ด้านซ้าย */}
+      <div className="flex items-center space-x-4 min-w-0 flex-1">
         <VoteCountBadge count={myVoteCount} isMyOption={isMyOption} />
-        <VoteOptionContent title={option.title} isMyOption={isMyOption} />
+        <div className="min-w-0 flex-1">
+          <VoteOptionContent title={option.title} isMyOption={isMyOption} />
+        </div>
       </div>
 
-      <div className="flex items-center space-x-2">
+      {/* ปุ่ม - อยู่ด้านขวา */}
+      <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
         <VoteButton
           onClick={() => handleAddVote(option.id)}
           icon={<PlusIcon size={16} className="text-gray-700" />}
@@ -55,11 +59,13 @@ export const VoteOptionItem: React.FC<VoteOptionItemProps> = ({
           disabled={myVoteCount <= 0}
         />
 
+        {/*
         {isMyOption && (
           <DeleteOptionButton
             onClick={() => handleDeleteOption(option.id)}
           />
         )}
+          */}
       </div>
     </div>
   );

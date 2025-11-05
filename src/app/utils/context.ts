@@ -1,8 +1,9 @@
+import { useAuth } from "../store/auth/useAuth";
 import { useMockAuth } from "../store/auth/useMockAuth";
 import { useRoom } from "../store/room/useRoomStore";
 
 export function getRequiredContext() {
-    const userId = useMockAuth.getState().mockUser?.id;
+    const userId = useAuth.getState().user?.id;
     const roomId = useRoom.getState().currentRoom?.id;
 
     if (!userId || !roomId) {

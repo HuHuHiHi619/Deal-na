@@ -1,4 +1,3 @@
-import { error } from "console";
 import { create } from "zustand";
 
 interface UiState {
@@ -14,7 +13,7 @@ interface UiState {
 }
 
 export const useUiStore = create<UiState>((set, get) => ({
-  loading: {},
+  loading: {loadingSession: true,},
   error: {},
   isPopup: false,
 
