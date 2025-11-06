@@ -12,6 +12,7 @@ import { useVoteStats } from "@/app/hooks/useVoteStats";
 import { useUiStore } from "@/app/store/useUiStore";
 import LoadingPage from "@/app/component/LoadingPage";
 import { useAuth } from "@/app/store/auth/useAuth";
+import { Vote } from "lucide-react";
 
 interface VoteOptionsProps {
   handleDeleteOption: (optionId: string) => void;
@@ -21,15 +22,15 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
   const { options } = useOptionStore();
   const { user } = useAuth();
   const { votes, createVote, deleteVote } = useVoteStore();
-  const { readyMembers , totalMembers} = useRoomReadyStore();
-  const { setLoading , isLoading } = useUiStore();
+  const { readyMembers, totalMembers } = useRoomReadyStore();
+  const { setLoading, isLoading } = useUiStore();
   const router = useRouter();
 
-  const { myVotes , remainingVotes } = useVoteStats({
-    votes ,
-    userId : user?.id ?? '',
-    maxVotes : 3
-  })
+  const { myVotes, remainingVotes } = useVoteStats({
+    votes,
+    userId: user?.id ?? "",
+    maxVotes: 3,
+  });
 
   useEffect(() => {
     const roomId = useRoom.getState().currentRoom?.id || "";
@@ -37,26 +38,27 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
     console.log(`Ready: ${readyMembers.length}/${totalMembers}`);
 
     if (totalMembers >= 2 && readyMembers.length === totalMembers) {
-      setLoading('resultLoading', true);
+      setLoading("resultLoading", true);
 
-    const timeout = setTimeout(() => {
+      const timeout = setTimeout(() => {
         router.push(`/room/${roomId}/result`);
-      },1000)
-      return () => clearTimeout(timeout)
+      }, 1000);
+      return () => clearTimeout(timeout);
     }
-  }, [ readyMembers, totalMembers ]);
+  }, [readyMembers, totalMembers]);
 
   if (!user) return;
 
-  if (isLoading('resultLoading')) {
-    return (
-      <LoadingPage title="Loading..." subtitle="please wait" />
-    );
+  if (isLoading("resultLoading")) {
+    return <LoadingPage title="Loading..." subtitle="please wait" />;
   }
 
   return (
-        <div className="mb-8">
-      <h2 className="text-2xl font-light mb-6 text-rose-700">Vote Options</h2>
+    <div className="mb-8">
+      <div className="flex items-center gap-2 text-2xl font-light mb-6 text-rose-700">
+        <Vote size={40} />
+        <h2>Vote Options</h2>
+      </div>
 
       <div className="space-y-4">
         {options?.map((option) => (
@@ -77,7 +79,6 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
         </div>
       </div>
     </div>
-
   );
 };
 

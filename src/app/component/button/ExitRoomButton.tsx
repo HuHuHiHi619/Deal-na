@@ -34,7 +34,7 @@ function ExitRoomButton() {
       <button
         onClick={handleExit}
         disabled={isLoading}
-        className="w-full bg-white/80 text-rose-600 border border-rose-200 px-6 py-3 rounded-xl font-medium hover:text-white hover:bg-rose-400 cursor-pointer  transition-all duration-300 flex items-center justify-center space-x-2"
+        className="w-full bg-rose-400  text-white border border-rose-200 px-6 py-3 rounded-xl font-medium hover:text-xl hover:bg-rose-600 cursor-pointer  transition-all duration-300 flex items-center justify-center space-x-2"
       >
         <X />
         <span>Exit Room</span>

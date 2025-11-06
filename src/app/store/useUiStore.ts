@@ -25,7 +25,10 @@ export const useUiStore = create<UiState>((set, get) => ({
   isLoading : (key) => !!get().loading[key],
 
   // Error actions
-  setError : (key , message) => set((state) => ({ ...state.error , [key] : message })),
+  setError : (key , message) => 
+    set((state) => ({ 
+      error : {...state.error , [key] : message }
+    })),
   getError : (key) => get().error[key] || null,
   clearAll : () => set({ error : {} , loading : {} }),
 

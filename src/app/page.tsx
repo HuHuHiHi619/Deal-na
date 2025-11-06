@@ -1,7 +1,6 @@
 "use client";
 
 import LoginButton from "./component/button/LoginButton";
-import MockLogin from "./component/button/MockLogin";
 import { HeartHandshake } from 'lucide-react';
 import TestUserLoginButton from "./component/button/TestUserLoginButton";
 
@@ -31,8 +30,7 @@ export default function Home() {
         {/* BUTTON */}
         <div className="space-y-3 text-center">
           <TestUserLoginButton />
-          <LoginButton />
-          <MockLogin />
+          <LoginButton />    
         </div>
       </div>
     </div>

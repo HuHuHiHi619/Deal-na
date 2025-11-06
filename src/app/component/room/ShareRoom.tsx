@@ -14,13 +14,12 @@ export default function ShareRoom() {
   const { isCopied, copyToClipboard } = useClipboard();
   const [showContent, setShowContent] = useState(false);
 
-  // ใช้ useEffect เพื่อจัดการ loading state
   useEffect(() => {
     if (currentRoom && isLoading('popupQr')) {
-      // เมื่อมี currentRoom และกำลังโหลดอยู่ ให้แสดงเนื้อหาหลังจาก delay นิดหน่อย
+    
       const timer = setTimeout(() => {
         setShowContent(true);
-      }, 1000);
+      }, 500);
 
       return () => clearTimeout(timer);
     }
@@ -31,7 +30,6 @@ export default function ShareRoom() {
   return portal(
     <div className="popup-center bg-amber-100/20 backdrop-blur-2xl p-6 rounded-2xl shadow-sm border border-rose-200/50">
       {!showContent ? (
-        // Loading State
         <div className="text-center py-8">
           <div className="flex justify-center mb-4">
             <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin"></div>
@@ -42,7 +40,7 @@ export default function ShareRoom() {
           <p className="text-gray-500 text-sm mt-2">Almost ready!</p>
         </div>
       ) : (
-        // Content State
+      
         <>
           <div className="text-center mb-6">
             <h1 className="text-2xl font-light text-rose-700 mb-2">
@@ -57,7 +55,7 @@ export default function ShareRoom() {
           <div className="mb-6">
             <div className="bg-rose-100 rounded-xl p-4 hover:bg-rose-400/50 shadow-md hover:border-rose-300 transition-all duration-300 group cursor-pointer relative">
               <Link href={currentRoom.url || ""}>
-                <div className="flex items-center justify-between">
+                <div className=" flex items-center justify-between">
                   <p className="text-gray-700 font-medium truncate mr-3">
                     {currentRoom.url}
                   </p>

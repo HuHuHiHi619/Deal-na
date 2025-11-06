@@ -8,6 +8,7 @@ import VoteOptions from "@/app/room/[roomId]/vote/page";
 import { useAuth } from "@/app/store/auth/useAuth";
 import { useRoomLifecycle } from "@/app/hooks/useRoomLifeCycle";
 import { RoomGuard } from "@/app/component/room/RoomGuard";
+import { AppWindow, Vote } from "lucide-react";
 
 export default function RoomPage() {
   const { roomId }: { roomId: string } = useParams();
@@ -51,18 +52,14 @@ export default function RoomPage() {
       user={currentUser}
       currentRoom={currentRoom}
     >
-      <div className="min-h-screen bg-gradient-to-br from-rose-50/40 to-lavender-50/40 backdrop-blur-md">
-        <header className="sticky top-0 z-10 bg-white/50 backdrop-blur-md border-b border-white/30 shadow-sm">
-          <div className="max-w-4xl mx-auto px-4 py-4">
-            <h1 className="text-2xl font-semibold text-gray-800 tracking-wide">
-              {currentRoom?.title}
+      <div className="min-h-screen  backdrop-blur-md">
+        <header className="sticky top-0 z-10 bg-gradient-to-r from-rose-300 to-rose-800 backdrop-blur-md border-b border-white/30 shadow-sm">
+          <div className="max-w-4xl flex items-center gap-4 mx-auto px-4 py-4 text-2xl font-semibold text-white tracking-wide">
+            <AppWindow size={30} />
+            <h1 className="">
+              Topic : {" "} {currentRoom?.title}
             </h1>
-            <p className="text-gray-600 text-sm mt-1">
-              Room Code:{" "}
-              <span className="font-mono text-indigo-600/80">
-                {currentRoom?.roomCode}
-              </span>
-            </p>
+            
           </div>
         </header>
 

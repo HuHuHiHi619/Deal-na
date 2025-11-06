@@ -1,5 +1,4 @@
-// utils/actionHelper.js
-
+// utils/actionHelper.ts
 export async function executeWithUI<T>(
   key: string,
   action: () => Promise<T>,
@@ -12,24 +11,27 @@ export async function executeWithUI<T>(
     onError?: (error: unknown) => void;
   }
 ): Promise<T | undefined> {
-  const { setError, setLoading } = ui;
+  const { setLoading, setError } = ui;
+
   setLoading(key, true);
-  setError(key, null);
+  setError(key, null); // reset error ก่อนเริ่ม action
 
   try {
     const result = await action();
     options?.onSuccess?.(result);
     return result;
   } catch (error) {
-    console.log(`Action ${key} error: ${error}`);
     const message =
       error instanceof Error ? error.message : "Something went wrong";
+
+    console.error(`[executeWithUI] ${key} failed:`, message);
     setError(key, message);
+
+    // แค่ log/handle — ไม่โยนต่อ เพื่อไม่ให้ React กลืน error
     options?.onError?.(error);
-    throw error;
+
+    return undefined; // ✅ ไม่ throw ออกมา
   } finally {
     setLoading(key, false);
   }
 }
-
-// แก้ปัญหา asyncAction

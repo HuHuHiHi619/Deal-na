@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../../store/auth/useAuth";
 import { useAsyncAction } from "../../hooks/useAsyncAction";
 import { useMockAuth } from "@/app/store/auth/useMockAuth";
+import { LogOutIcon } from "lucide-react";
 
 export default function LogoutButton() {
   const { signOut } = useAuth();
@@ -40,10 +41,11 @@ export default function LogoutButton() {
         </button>
       ) : (
         <button
-          className="bg-rose-500 w-full rounded-2xl text-white p-4 cursor-pointer hover:bg-rose-700 transition-all duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center justify-center gap-2 bg-white w-full rounded-2xl text-rose-300 border-2 p-2 cursor-pointer hover:bg-rose-400 hover:text-white transition-all duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleLogout}
           disabled={isLoading}
         >
+          <LogOutIcon />
           Logout
         </button>
       )}

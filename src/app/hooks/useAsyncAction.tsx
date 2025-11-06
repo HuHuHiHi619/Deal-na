@@ -9,11 +9,23 @@ export function useAsyncAction<T>(
     onError?: (error: unknown) => void;
   }
 ) {
-  const { setLoading , setError , isLoading , getError } = useUiStore()
-  
+  const { setLoading, setError, isLoading, getError } = useUiStore();
+
   const execute = async (action: () => Promise<T>) => {
-    return executeWithUI(actionKey, action, { setLoading , setError }  ,options);
+    try {
+      return await executeWithUI(actionKey, action, { setLoading, setError }, options);
+    } catch (error) {
+      console.warn(`[useAsyncAction] caught unhandled error for ${actionKey}:`, error);
+      setError(
+        actionKey,
+        error instanceof Error ? error.message : String(error)
+      );
+    }
   };
 
-  return { execute, isLoading : isLoading(actionKey), error : getError(actionKey) };
+  return {
+    execute,
+    isLoading: isLoading(actionKey),
+    error: getError(actionKey),
+  };
 }
