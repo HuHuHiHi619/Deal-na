@@ -11,9 +11,9 @@ function OptionsPage() {
     <div className="flex  items-center justify-center p-4">
       {/* Header */}
       <div className="w-full max-w-md bg-rose-100 rounded-2xl shadow-lg  p-4 md:p-8 space-y-8">
-        <h1 className="flex items-center justify-center gap-3 text-2xl font-bold text-center border-b pb-4 border-rose-200 text-rose-400 ">
+        <h1 className="flex items-center justify-center gap-3 text-xl font-bold text-center border-b pb-4 border-rose-200 text-rose-400 ">
           <PlusCircle />
-          Choice
+          Give me an option
         </h1>
         <div className="flex justify-center">
           <p className="text-xl text-rose-400 font-bold text-center">

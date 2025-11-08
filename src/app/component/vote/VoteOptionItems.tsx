@@ -1,10 +1,10 @@
-// components/vote/VoteOptionItem.tsx
+
 import React from "react";
 import { MinusIcon, PlusIcon } from "lucide-react";
 import { VoteOptionContent } from "./VoteOptionContent";
 import { VoteCountBadge } from "./VoteCountBadge";
 import { VoteButton } from "../button/VoteButton";
-import { DeleteOptionButton } from "../button/DeleteOptionButton";
+
 
 interface VoteOptionItemProps {
   option: any;
@@ -35,7 +35,7 @@ export const VoteOptionItem: React.FC<VoteOptionItemProps> = ({
         isMyOption
           ? "bg-rose-100 border-rose-200/40"
           : "bg-indigo-100 border-indigo-200/40"
-      } hover:scale-[1.02]`}
+      } `}
     >
       {/* เนื้อหา - อยู่ด้านซ้าย */}
       <div className="flex items-center space-x-4 min-w-0 flex-1">
@@ -49,13 +49,13 @@ export const VoteOptionItem: React.FC<VoteOptionItemProps> = ({
       <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
         <VoteButton
           onClick={() => handleAddVote(option.id)}
-          icon={<PlusIcon size={16} className="text-gray-700" />}
+          icon={<PlusIcon size={16} />}
           disabled={remainingVotes <= 0}
         />
 
         <VoteButton
           onClick={() => handleRemoveVote(myVoteForThisOption?.id, option.id)}
-          icon={<MinusIcon size={16} className="text-gray-700" />}
+          icon={<MinusIcon size={16} />}
           disabled={myVoteCount <= 0}
         />
 

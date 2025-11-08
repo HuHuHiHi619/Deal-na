@@ -1,4 +1,4 @@
-// components/vote/VoteCountBadge.tsx
+
 import React from "react";
 
 interface VoteCountBadgeProps {

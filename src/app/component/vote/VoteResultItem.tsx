@@ -1,4 +1,4 @@
-// components/vote/VoteResultItem.tsx
+
 interface VoteResultItemProps {
   title: string;
   voteCount: number;
@@ -10,7 +10,6 @@ export function VoteResultItem({
   title, 
   voteCount, 
   percentage, 
-  isWinner = false 
 }: VoteResultItemProps) {
   return (
     <div className="backdrop-blur-md bg-rose-100 to-lavender-50/50 border border-white/40 rounded-2xl p-5 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300">

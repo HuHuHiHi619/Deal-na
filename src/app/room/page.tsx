@@ -8,6 +8,7 @@ import { useRoom } from "../store/room/useRoomStore";
 import { useRoomForm } from "../store/useRoomForm";
 import { useUiStore } from "../store/useUiStore";
 
+
 function Rooms() {
   const { currentRoom } = useRoom();
   const { titleInput } = useRoomForm();
@@ -15,6 +16,7 @@ function Rooms() {
 
   return (
     <>
+     
       <TopicPage />
       {titleInput ? <OptionsPage /> : null}
       <CreateRoomButton />

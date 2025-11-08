@@ -50,7 +50,7 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
   if (!user) return;
 
   if (isLoading("resultLoading")) {
-    return <LoadingPage title="Loading..." subtitle="please wait" />;
+    return <LoadingPage title="Loading..." subtitle="please waiting for result" />;
   }
 
   return (

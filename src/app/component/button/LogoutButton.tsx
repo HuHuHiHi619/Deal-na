@@ -6,7 +6,7 @@ import { useAsyncAction } from "../../hooks/useAsyncAction";
 import { useMockAuth } from "@/app/store/auth/useMockAuth";
 import { LogOutIcon } from "lucide-react";
 
-export default function LogoutButton() {
+export default function LogoutButton({ mini = false }) {
   const { signOut } = useAuth();
   const { mockUser, logout } = useMockAuth();
   const router = useRouter();
@@ -23,21 +23,21 @@ export default function LogoutButton() {
   const handleLogout = async () => {
     await execute(async () => {
       if (mockUser) {
-         logout();
-         return
+        logout();
+        return;
       }
       return await signOut();
     });
   };
   return (
     <div className="flex justify-center my-2">
-      {mockUser ? (
+      {mini ? (
         <button
-          className="bg-rose-700 text-white p-4 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-white  rounded-full text-rose-400 border-2 p-2 cursor-pointer hover:bg-rose-400 hover:text-white transition-all duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleLogout}
           disabled={isLoading}
         >
-          mock Logoutz
+          <LogOutIcon />
         </button>
       ) : (
         <button

@@ -21,9 +21,10 @@ function ExitRoomButton() {
   });
 
   const handleExit = async () => {
+    const confirmed = confirm("Are you sure you want to exit the room?");
+    if (!confirmed) return;
+    
     await execute(async () => {
-      const confirmed = confirm("Are you sure you want to exit the room?");
-      if (!confirmed) return;
       unsubscribeAll();
       exitRoom();
     });

@@ -2,7 +2,8 @@ import { Session, User } from "@supabase/supabase-js";
 import { create } from "zustand";
 import { supabase } from "../../lib/supabase";
 
-export interface FacebookUserMetadata {
+interface ProviderUserMetadata {
+  // common fields
   avatar_url?: string;
   email?: string;
   email_verified?: boolean;
@@ -12,22 +13,34 @@ export interface FacebookUserMetadata {
   picture?: string;
   provider_id?: string;
   sub?: string;
+
+  // google 
+  given_name?: string;
+  family_name?: string;
+  locale?: string;
 }
 
-export interface AuthUser extends User {
-  user_metadata: FacebookUserMetadata;
+type AuthProvider = 'facebook' | 'google' | 'email'
+
+interface AuthUser extends User {
+  user_metadata: ProviderUserMetadata;
   app_metadata: {
     provider?: string;
     providers?: string[];
   };
 }
 
-export interface AuthState {
+interface AuthState {
   user: AuthUser | null;
   session: Session | null;
   setUser: (user: AuthUser | null) => void;
   setSession: (session: Session | null) => void;
+
+  loginWithProvider: (provider: AuthProvider, options?: Record<string, any>) => Promise<void>;
   loginWithFacebook: () => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  loginWithEmail: (email: string, password: string) => Promise<void>;
+  
   signOut: () => Promise<void>;
 }
 
@@ -42,11 +55,40 @@ export const useAuth = create<AuthState>((set) => ({
       user: session?.user,
     }),
 
-  loginWithFacebook: async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "facebook",
-    });
-    if (error) throw error;
+  loginWithProvider : async (provider : AuthProvider , options? : Record<string , any>) => {
+    switch (provider) {
+      case 'facebook' : 
+      case 'google' : 
+        const { error : oauthError } = await supabase.auth.signInWithOAuth({
+          provider,
+          options : {
+              redirectTo: `${window.location.origin}/room`,
+          },
+        });
+        if (oauthError) throw oauthError;
+      break;
+
+      case 'email' :
+        if (!options) throw new Error('Options are required for email login');
+        const { email , password } = options 
+        if(!email || !password ) throw new Error('Email and password are required');
+        const { error : emailError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+        if (emailError) throw emailError;
+      break;
+    }
+  },
+
+  loginWithFacebook : async () => {
+    await useAuth.getState().loginWithProvider('facebook')
+  },
+  loginWithGoogle: async () => {
+    await useAuth.getState().loginWithProvider('google');
+  },
+  loginWithEmail : async (email : string , password : string) => {
+    await useAuth.getState().loginWithProvider('email' , { email , password })
   },
 
   signOut: async () => {

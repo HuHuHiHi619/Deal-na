@@ -1,3 +1,4 @@
+import { error } from "console";
 import { supabase } from "../lib/supabase";
 
 export interface VoteProps {
@@ -32,7 +33,7 @@ export async function deleteVote({ optionId, roomId, userId }: VoteProps) {
       .from("votes")
       .delete()
       .eq("room_id", roomId)
-      .eq("id", optionId)
+      .eq("option_id", optionId)
       .eq("user_id", userId)
       .select();
 

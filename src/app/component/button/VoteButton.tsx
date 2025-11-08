@@ -17,7 +17,7 @@ export const VoteButton: React.FC<VoteButtonProps> = ({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`bg-white/40 hover:bg-white/60 backdrop-blur-sm p-2 rounded-lg shadow-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed ${className}`}
+      className={`bg-white hover:scale-120 cursor-pointer backdrop-blur-sm p-2 rounded-lg shadow-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed ${className}`}
     >
       {icon}
     </button>

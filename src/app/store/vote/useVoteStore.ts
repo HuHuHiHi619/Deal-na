@@ -2,6 +2,7 @@ import { createVote, deleteVote } from "@/app/services/votes";
 import { actionWrapper } from "@/app/utils/actionWrapper";
 import { create } from "zustand";
 import { getVoteAPI } from "@/app/lib/voteAPI";
+import { useUiStore } from "../useUiStore";
 
 export interface Vote {
   id: string;
@@ -67,7 +68,12 @@ export const useVoteStore = create<VoteState>((set, get) => ({
         action: async ({ roomId, userId }) =>
           await createVote({ roomId, optionId, userId }),
       });
-      if (newVote) get().addVote(newVote);
+      if (newVote) {
+        useUiStore.getState().setError('sendReady', null);
+        get().addVote(newVote);
+        await get().fetchVote();
+
+      }
     } catch (error) {
       console.error(error);
     }
@@ -80,7 +86,10 @@ export const useVoteStore = create<VoteState>((set, get) => ({
           await deleteVote({ roomId, optionId, userId }),
       });
       console.log('delete vote in store sent voteId' , voteId);
-      if(success) get().removeVote(voteId);
+      if(success) {
+        get().removeVote(voteId);
+        await get().fetchVote();
+      }
     }catch(error){
       console.error(error)
     }

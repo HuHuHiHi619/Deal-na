@@ -4,6 +4,8 @@ import { useRoomForm } from "../store/useRoomForm";
 import { useAuth } from "../store/auth/useAuth";
 import { Ban, PencilLine } from "lucide-react";
 import { useUiStore } from "../store/useUiStore";
+import LogoutButton from "../component/button/LogoutButton";
+import UserMenu from "../component/UserMenu";
 
 export default function TopicPage() {
   const [rawTitle, setRawTitle] = useState<string>("");
@@ -69,12 +71,14 @@ export default function TopicPage() {
           <PencilLine />
           Create Topic
         </h2>
-        <p className="text-sm text-gray-600">
-          As{" "}
-          <span className="font-medium text-rose-600">
-            {user.user_metadata.name || "test user"}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600">
+            As{" "}
           </span>
-        </p>
+          <div className="flex items-center gap-2 bg-rose-100 p-2 rounded-4xl hover:scale-105 transition-all duration-300">
+            <UserMenu />
+          </div>
+        </div>
 
         <form onSubmit={handleFormSubmit} className="space-y-4">
           <div>

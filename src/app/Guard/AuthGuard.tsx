@@ -17,25 +17,23 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
-    // 1. Do nothing until the initial session check is complete.
     if (loading.loadingSession) {
       return;
     }
 
-    // 2. Session check is done. If there's no user, redirect.
     if (!user && !hasRedirectedRef.current) {
       hasRedirectedRef.current = true;
       console.log("AuthGuard: No user found. Redirecting to login.");
       router.replace(`/?redirect=${encodeURIComponent(pathname)}`);
     }
 
-    // 3. If a user exists, reset the ref for any future logouts.
+    
     if (user) {
       hasRedirectedRef.current = false;
     }
   }, [user, loading.loadingSession, router, pathname]);
 
-  // 1. Show a full-page spinner while the session is being checked.
+  
   if (loading.loadingSession) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -47,8 +45,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
-  // 2. Session is loaded, but no user. The useEffect is handling the redirect.
-  // Show a simple placeholder.
+  
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -57,6 +54,6 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
-  // 3. Session is loaded AND we have a user. Show the protected content.
+  
   return <>{children}</>;
 }
