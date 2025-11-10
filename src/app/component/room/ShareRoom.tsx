@@ -1,3 +1,4 @@
+'use client';
 import { QRCodeSVG } from "qrcode.react";
 import { useRoom } from "../../store/room/useRoomStore";
 import Link from "next/link";

@@ -1,3 +1,4 @@
+'use client';
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMockAuth } from "../../store/auth/useMockAuth";
 import { useEffect } from "react";

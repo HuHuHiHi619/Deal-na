@@ -1,3 +1,4 @@
+'use client';
 import { useParams, useRouter } from "next/navigation";
 import React from "react";
 import { useRoom } from "../../store/room/useRoomStore";

@@ -1,4 +1,5 @@
-// hooks/useRoomLifecycle.ts
+'use client';
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRoom } from "@/app/store/room/useRoomStore";
 import { useRealtimeRoom } from "@/app/hooks/useRealtimeRoom";

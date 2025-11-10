@@ -4,7 +4,6 @@ import { useRoomForm } from "../store/useRoomForm";
 import { useAuth } from "../store/auth/useAuth";
 import { Ban, PencilLine } from "lucide-react";
 import { useUiStore } from "../store/useUiStore";
-import LogoutButton from "../component/button/LogoutButton";
 import UserMenu from "../component/UserMenu";
 
 export default function TopicPage() {

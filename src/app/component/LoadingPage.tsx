@@ -1,5 +1,5 @@
 import React from 'react'
-// components/ui/LoadingState.tsx
+
 interface LoadingStateProps {
   title?: string;
   subtitle?: string;

@@ -1,6 +1,5 @@
-import { useMockAuth } from "@/app/store/auth/useMockAuth";
+'use client';
 import { useOptionStore } from "@/app/store/option/useOptionStore";
-import { useRoomMemberStore } from "@/app/store/room/useRoomMemberStore";
 import { useRoomReadyStore } from "@/app/store/room/useRoomReadyStore";
 import { useRoom } from "@/app/store/room/useRoomStore";
 import { useVoteStore } from "@/app/store/vote/useVoteStore";

@@ -1,3 +1,5 @@
+'use client';
+
 import { useMemo } from "react";
 import { VoteResults } from "../store/vote/useVoteStore";
 

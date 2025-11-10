@@ -1,10 +1,10 @@
+'use client';
 import React, { useState } from "react";
 import { useRoomRealtimeReadyStore } from "@/app/store/room/useRoomRealtimeReadyStore";
 import { useAsyncAction } from "../../hooks/useAsyncAction";
 import { useVoteStats } from "@/app/hooks/useVoteStats";
 import { useVoteStore } from "@/app/store/vote/useVoteStore";
 import { useAuth } from "@/app/store/auth/useAuth";
-import { useUiStore } from "@/app/store/useUiStore";
 import { Ban } from "lucide-react";
 
 const ReadyButton: React.FC<{ userId: string }> = ({ userId }) => {

@@ -10,8 +10,6 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// แยก real authen และ mock
-
 export default function AuthProvider({ children }: AuthProviderProps) {
   const { setUser, setSession , user } = useAuth();
   const { setLoading } = useUiStore();

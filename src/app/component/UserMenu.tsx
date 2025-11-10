@@ -1,3 +1,4 @@
+'use client';
 import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../store/auth/useAuth";
