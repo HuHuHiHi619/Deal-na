@@ -55,7 +55,7 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
 
   return (
     <div className="mb-8">
-      <div className="flex items-center gap-2 text-2xl font-light mb-6 text-rose-700">
+      <div className="flex items-center gap-2 text-2xl font-light mb-6 pl-4 text-rose-700">
         <Vote size={40} />
         <h2>Vote Options</h2>
       </div>

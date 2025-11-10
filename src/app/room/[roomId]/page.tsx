@@ -53,11 +53,11 @@ export default function RoomPage() {
       currentRoom={currentRoom}
     >
       <div className="min-h-screen  backdrop-blur-md">
-        <header className="sticky top-0 z-10 bg-gradient-to-r from-rose-300 to-rose-800 backdrop-blur-md border-b border-white/30 shadow-sm">
-          <div className="max-w-4xl flex items-center gap-4 mx-auto px-4 py-4 text-2xl font-semibold text-white tracking-wide">
+       <header className="sticky top-0 z-10 bg-gradient-to-r from-rose-300 to-rose-800 backdrop-blur-md rounded-b-xl ring-offset-4 ring-4 ring-rose-400 shadow-sm">
+          <div className="max-w-4xl flex items-center gap-4 mx-auto pl-8 py-4  text-2xl font-semibold text-white tracking-wide">
             <AppWindow size={30} />
-            <h1 className="">
-              Topic : {" "} {currentRoom?.title}
+            <h1 className="text-3xl">
+              {currentRoom?.title}
             </h1>
             
           </div>

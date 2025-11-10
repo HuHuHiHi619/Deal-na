@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { HeartHandshake ,  Ban } from "lucide-react";
+import { HeartHandshake, Ban } from "lucide-react";
 import { useRoom } from "../../store/room/useRoomStore";
 import { useRoomForm } from "../../store/useRoomForm";
 import { useUiStore } from "../../store/useUiStore";
@@ -48,7 +48,7 @@ export default function CreateRoomButton() {
   };
 
   return (
-    <div className="flex justify-center flex-col items-center p-4">
+    <div className="grid justify-center p-4">
       {error && (
         <div className="w-md flex gap-2 items-center justify-center bg-rose-200 text-red-500 mb-4 py-2 px-4 text-sm shadow-md font-medium rounded-xl ">
           <Ban />
@@ -58,7 +58,7 @@ export default function CreateRoomButton() {
 
       <button
         disabled={isLoading}
-        className={`w-md text-2xl bg-gradient-to-r from-rose-400 to-pink-400 text-white border border-rose-200 px-6 py-3 rounded-xl font-medium flex items-center justify-center transition-all duration-300 ${
+        className={`w-md  text-2xl bg-gradient-to-r from-rose-400 to-pink-400 text-white border border-rose-200 px-6 py-3 rounded-xl font-medium flex items-center justify-center transition-all duration-300 ${
           isLoading
             ? "opacity-60 cursor-not-allowed"
             : "hover:translate-y-[-4px] cursor-pointer"

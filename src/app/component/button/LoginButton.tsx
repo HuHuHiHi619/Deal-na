@@ -46,7 +46,7 @@ return (
         onClick={() => fb.execute(() => loginWithGoogle())}
         disabled={fb.isLoading}
         >
-        {fb.isLoading ? "Logging in..." : "Login with Facebook"}
+        {fb.isLoading ? "Logging in..." : "Login with Google"}
       </button>
     </div>
   </>
