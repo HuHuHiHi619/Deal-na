@@ -4,12 +4,15 @@ import { MinusIcon, PlusIcon } from "lucide-react";
 import { VoteOptionContent } from "./VoteOptionContent";
 import { VoteCountBadge } from "./VoteCountBadge";
 import { VoteButton } from "../button/VoteButton";
+import { Option } from "@/app/store/option/useOptionStore";
+import { Vote } from "@/app/store/vote/useVoteStore";
+import { AuthUser } from "@/app/store/auth/useAuth";
 
 
 interface VoteOptionItemProps {
-  option: any;
-  user: any;
-  myVotes: any[];
+  option: Option;
+  user: AuthUser;
+  myVotes: Vote[];
   remainingVotes: number;
   handleAddVote: (optionId: string) => void;
   handleRemoveVote: (voteId: string, optionId: string) => void;
@@ -54,7 +57,7 @@ export const VoteOptionItem: React.FC<VoteOptionItemProps> = ({
         />
 
         <VoteButton
-          onClick={() => handleRemoveVote(myVoteForThisOption?.id, option.id)}
+          onClick={() => handleRemoveVote(myVoteForThisOption?.id ?? "", option.id)}
           icon={<MinusIcon size={16} />}
           disabled={myVoteCount <= 0}
         />

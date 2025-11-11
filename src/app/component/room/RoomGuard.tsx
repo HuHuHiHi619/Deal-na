@@ -3,6 +3,8 @@
 import LoadingPage from "@/app/component/LoadingPage";
 import ErrorPage from "@/app/component/ErrorPage";
 import { useRouter } from "next/navigation";
+import { AuthUser } from "@/app/store/auth/useAuth";
+import { Room } from "@/app/store/room/useRoomStore";
 
 interface RoomGuardProps {
   isJoined : boolean
@@ -10,9 +12,9 @@ interface RoomGuardProps {
   roomId: string;
   error: string | Error | null;
   clearError: () => void;
-  user: any;
+  user: AuthUser | null;
   children: React.ReactNode;
-  currentRoom: any
+  currentRoom: Room | null
 }
 
 export function RoomGuard({

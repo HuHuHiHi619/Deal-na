@@ -18,7 +18,7 @@ const UserMenu = () => {
         className="flex items-center gap-2 px-3 py-2 bg-rose-100 cursor-pointer rounded-4xl hover:bg-rose-400 hover:scale-105 transition-all duration-300 "
       >
         <img 
-          src={user?.user_metadata.avatar_url || ""} 
+          src={user?.user_metadata.avatar_url} 
           className="w-8 h-8 rounded-full " 
           alt="avatar"
         />

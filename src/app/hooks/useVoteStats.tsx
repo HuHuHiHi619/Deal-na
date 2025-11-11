@@ -1,8 +1,9 @@
 'use client';
 import { useMemo } from "react"
+import { Vote } from "../store/vote/useVoteStore";
 
 interface UseVoteStatsProps{
-    votes : any[]
+    votes : Vote[]
     userId : string
     maxVotes : number
 }

@@ -51,19 +51,14 @@ export const useVoteStore = create<VoteState>((set, get) => ({
 
   // API
   fetchVote: async () => {
-    try {
       const votes = await actionWrapper("fetchVoteLoading", {
         action: async ({ roomId }) => await getVoteAPI(roomId),
       });
       console.log('fetch vote in store sent votes' , votes);
       set({ voteResults : votes });
-    } catch (error) {
-      console.error(error);
-    }
   },
 
   createVote: async (optionId) => {
-    try {
       const newVote = await actionWrapper("createVoteLoading", {
         action: async ({ roomId, userId }) =>
           await createVote({ roomId, optionId, userId }),
@@ -74,13 +69,9 @@ export const useVoteStore = create<VoteState>((set, get) => ({
         await get().fetchVote();
 
       }
-    } catch (error) {
-      console.error(error);
-    }
   },
 
   deleteVote: async (voteId , optionId) => {
-    try{
       const success = await actionWrapper("deleteVoteLoading", {
         action: async ({ roomId, userId }) =>
           await deleteVote({ roomId, optionId, userId }),
@@ -90,8 +81,5 @@ export const useVoteStore = create<VoteState>((set, get) => ({
         get().removeVote(voteId);
         await get().fetchVote();
       }
-    }catch(error){
-      console.error(error)
-    }
   },
 }));

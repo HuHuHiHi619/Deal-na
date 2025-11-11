@@ -21,8 +21,16 @@ interface ProviderUserMetadata {
 }
 
 type AuthProvider = 'facebook' | 'google' | 'email'
+type FacebookOptions = never                         
+type GoogleOptions   = never
+type EmailOptions    = { email: string; password: string }
+type ProviderOptions = {
+  facebook: FacebookOptions
+  google:   GoogleOptions
+  email:    EmailOptions
+}
 
-interface AuthUser extends User {
+export interface AuthUser extends User {
   user_metadata: ProviderUserMetadata;
   app_metadata: {
     provider?: string;
@@ -30,13 +38,16 @@ interface AuthUser extends User {
   };
 }
 
-interface AuthState {
+ interface AuthState {
   user: AuthUser | null;
   session: Session | null;
   setUser: (user: AuthUser | null) => void;
   setSession: (session: Session | null) => void;
 
-  loginWithProvider: (provider: AuthProvider, options?: Record<string, any>) => Promise<void>;
+  loginWithProvider: <P extends AuthProvider>(
+    provider : P,
+    options? : ProviderOptions[P]
+  ) => Promise<void>;
   loginWithFacebook: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   loginWithEmail: (email: string, password: string) => Promise<void>;
@@ -55,7 +66,7 @@ export const useAuth = create<AuthState>((set) => ({
       user: session?.user,
     }),
 
-  loginWithProvider : async (provider : AuthProvider , options? : Record<string , any>) => {
+  loginWithProvider : async <P extends AuthProvider>(provider : P , options? : ProviderOptions[P]) => {
     switch (provider) {
       case 'facebook' : 
       case 'google' : 

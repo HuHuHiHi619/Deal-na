@@ -1,6 +1,11 @@
 import { supabase } from "@/app/lib/supabase";
 import { NextResponse } from "next/server";
 
+interface VoteResults {
+    option_id : string
+    title : string
+    vote_count: number
+}
 
 export async function GET (req : Request){
     try{
@@ -14,7 +19,7 @@ export async function GET (req : Request){
 
         if(resultsError) throw resultsError;
 
-        const formattedResult = results.map((r : any) => ({
+        const formattedResult = results.map((r : VoteResults) => ({
             optionId : r.option_id,
             title : r.title,
             voteCount : r.vote_count
@@ -23,5 +28,11 @@ export async function GET (req : Request){
         if(resultsError) throw resultsError;
         console.log('formattedResult' , formattedResult);
         return NextResponse.json({ formattedResult });
-    }catch(error){console.error(error)}
+    }catch (error: unknown) {
+  console.error("Error joining room:", error);
+  return NextResponse.json(
+    { error: "Internal server error" },
+    { status: 500 }
+  );
+}
 }

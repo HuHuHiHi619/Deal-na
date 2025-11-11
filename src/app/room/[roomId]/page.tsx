@@ -48,7 +48,7 @@ export default function RoomPage() {
       roomId={roomId}
       error={error}
       clearError={clearError}
-      user={currentUser}
+      user={currentUser ?? null}
       currentRoom={currentRoom}
     >
       <div className="min-h-screen  backdrop-blur-md">

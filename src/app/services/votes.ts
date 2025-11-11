@@ -24,7 +24,8 @@ export async function createVote({ roomId, optionId, userId }: VoteProps) {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error(error);
+    console.error(" createVote service error:",error);
+    return false
   }
 }
 export async function deleteVote({ optionId, roomId, userId }: VoteProps) {
@@ -42,8 +43,9 @@ export async function deleteVote({ optionId, roomId, userId }: VoteProps) {
       return false;
     }
 
-    return true; // ✅ return boolean เสมอ
+    return true; 
   } catch (error) {
     console.error("deleteVote service error : ", error);
+    return false
   }
 }

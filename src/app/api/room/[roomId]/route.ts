@@ -76,10 +76,11 @@ export async function POST(
         url: `/room/${room.id}`,
       },
     });
-  } catch (error) {
-    console.error("Error joining room:", error);
-    return NextResponse.json({
-      error: "Failed to join room"
-    },{status : 500})
-  }
+  }catch (error: unknown) {
+  console.error("Error joining room:", error);
+  return NextResponse.json(
+    { error: "Internal server error" },
+    { status: 500 }
+  );
+}
 }

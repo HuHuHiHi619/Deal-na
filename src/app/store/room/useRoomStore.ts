@@ -11,7 +11,7 @@ import { useVoteStore } from "../vote/useVoteStore";
 import { useRoomReadyStore } from "./useRoomReadyStore";
 import { useRoomMemberStore } from "./useRoomMemberStore";
 
-interface Room {
+export interface Room {
   id: string;
   roomCode: string;
   title: string;
@@ -27,7 +27,7 @@ interface RoomState {
   currentRoom: Room | null;
   rooms: Room[];
   error: string | null;
-  isJoin : boolean;
+  isJoin: boolean;
   hasExit: boolean;
 
   // Actions
@@ -47,7 +47,6 @@ interface RoomState {
 export const useRoom = create<RoomState>()(
   persist(
     (set, get) => ({
-      // Initial State
       currentRoom: null,
       rooms: [],
       hasExit: false,
@@ -57,13 +56,10 @@ export const useRoom = create<RoomState>()(
       setError: (error: string | null) => set({ error }),
       clearError: () => set({ error: null }),
 
-      // Create room
       createRoom: async (title: string, options: string[], userId: string) => {
-        useUiStore.getState().setLoading("createRoomLoading", true);
         set({ error: null });
-        console.log("create room input", { title, options , userId });
-
-        try {
+        console.log("create room input", { title, options, userId });
+        
           const data = await createRoomAPI(title, options, userId);
 
           const room: Room = {
@@ -85,40 +81,32 @@ export const useRoom = create<RoomState>()(
           });
 
           useOptionStore.getState().setOptions(data.options || []);
-        } catch (error: any) {
-          console.error("Failed to create room:", error);
-          set({ error: "Failed to create room" });
-        } finally {
-          useUiStore.getState().setLoading("createRoomLoading", false);
-        }
+       
       },
 
       // Join room
       joinRoom: async (roomId: string, userId: string) => {
         useUiStore.getState().setLoading("joinRoomLoading", true);
-        
-        const state = get()
-        if(state.isJoin) {
-          console.log('room already joined');
-          return
+
+        const state = get();
+        if (state.isJoin) {
+          console.log("room already joined");
+          return;
         }
-        
-        set({ error: null , isJoin : true });
+
+        set({ error: null, isJoin: true });
         try {
           const data = await joinRoomAPI(roomId, userId);
           console.log("📦 joinRoom API response:", data);
 
-          // 👇 ตรวจสอบก่อนว่ามี error จาก API หรือไม่
           if (data.error) {
             throw new Error(data.error);
           }
 
-          // เช็คว่า response มีข้อมูลครบถ้วนหรือไม่
           if (!data) {
             throw new Error("No data returned from API");
           }
 
-          // จัดการกรณีที่ API return ข้อมูลในรูปแบบต่างๆ
           const roomData = data.room || data;
 
           if (!roomData || !roomData.id) {
@@ -127,7 +115,7 @@ export const useRoom = create<RoomState>()(
           }
           const room: Room = {
             id: roomData.id,
-            roomCode: roomData.room_code || roomData.roomCode ,
+            roomCode: roomData.room_code || roomData.roomCode,
             title: roomData.title || "Untitled Room",
             status: roomData.status || "open",
             createdAt:
@@ -149,19 +137,18 @@ export const useRoom = create<RoomState>()(
             hasExit: false,
           });
 
-          // Set options ถ้ามี
           if (data.options && Array.isArray(data.options)) {
             useOptionStore.getState().setOptions(data.options);
           }
 
           return room;
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("❌ Failed to join room:", error);
-          const errorMessage =
-            error.response?.data?.message ||
-            error.message ||
-            "Failed to join room";
-          set({ error: errorMessage });
+          const message = error instanceof Error 
+            ? error.message 
+            : "Failed to join room";
+
+          set({ error: message });
           throw error;
         } finally {
           useUiStore.getState().setLoading("joinRoomLoading", false);
@@ -176,8 +163,7 @@ export const useRoom = create<RoomState>()(
         const { unsubscribe: unsubRoom } = useRoomRealtimeStore.getState();
         const { unsubscribe: unsubOption } = useOptionRealtimeStore.getState();
         const { unsubscribe: unsubVote } = useVoteRealtimeStore.getState();
-        const { unsubscribe: unsubReady } =
-          useRoomRealtimeReadyStore.getState();
+        const { unsubscribe: unsubReady } = useRoomRealtimeReadyStore.getState();
 
         unsubRoom();
         unsubOption();
@@ -187,8 +173,7 @@ export const useRoom = create<RoomState>()(
         // 2. Clear room data
         set({ currentRoom: null, error: null, hasExit: true });
 
-        // 3. Clear related stores (ถ้ามี)
-
+        // 3. Clear related stores 
         useVoteStore.getState().clearVotes?.();
         useRoomReadyStore.getState().clearReady?.();
         useRoomMemberStore.getState().clearMembers?.();
@@ -197,11 +182,10 @@ export const useRoom = create<RoomState>()(
       },
     }),
     {
-      name: "room-storage", // unique name for localStorage key
+      name: "room-storage", 
       partialize: (state) => ({
         currentRoom: state.currentRoom,
-        rooms: state.rooms,
-        // Don't persist loading, error, and form input states
+        rooms: state.rooms
       }),
     }
   )

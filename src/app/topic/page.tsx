@@ -48,14 +48,13 @@ export default function TopicPage() {
       console.log("title is :", rawTitle);
       setTitle(rawTitle);
       setError("rawTitle", null);
-    } catch (error) {
+    } catch (error : unknown) {
       setError("rawTitle", "Failed to create topic. Please try again.");
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setRawTitle(e.target.value);
-    // ลบ error เมื่อ user เริ่มแก้ไข
     if (error) {
       setError("rawTitle", null);
     }

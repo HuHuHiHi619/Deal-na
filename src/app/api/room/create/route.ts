@@ -96,12 +96,11 @@ export async function POST(req: Request) {
       options: newOptions,
       message: "Room created successfully",
     });
-  } catch (error) {
-    console.error("Error in API route:", error); // Log the general route error
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
-  }
+  } catch (error: unknown) {
+  console.error("Error joining room:", error);
+  return NextResponse.json(
+    { error: "Internal server error" },
+    { status: 500 }
+  );
 }
-//   message: 'insert or update on table "room_members" violates foreign key constraint "room_members_user_id_fkey"'
+}

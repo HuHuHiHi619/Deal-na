@@ -63,6 +63,7 @@ export async function deleteOption({
     if (error) throw error;
     return data[0];
   } catch (error) {
-    console.error(error);
+    console.error("deleteOption service error ",error);
+    return false
   }
 }

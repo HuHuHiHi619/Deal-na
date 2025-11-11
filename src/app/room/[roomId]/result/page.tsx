@@ -10,7 +10,7 @@ import { useVoteStore } from "@/app/store/vote/useVoteStore";
 import { AppWindow } from "lucide-react";
 import React, { useEffect } from "react";
 
-function page() {
+function Page() {
   const { voteResults, fetchVote } = useVoteStore();
   const { currentRoom } = useRoom();
   const { setLoading } = useUiStore();
@@ -58,4 +58,4 @@ function page() {
   );
 }
 
-export default page;
+export default Page;

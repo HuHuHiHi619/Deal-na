@@ -34,8 +34,10 @@ function TestUserLoginButton() {
       });
       if (!error) window.location.href = "/room";
       else console.error(error.message);
-    } catch (err) {
+    } catch (err : unknown) {
       console.error("Login with email error:", err);
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      setError(message)
     }
   };
 

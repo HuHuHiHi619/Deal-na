@@ -36,8 +36,11 @@ export async function GET(req: Request) {
     };
 
     return NextResponse.json({ options });
-  } catch (error) {
+  } catch (error : unknown) {
     console.error("Get option api Error",error);
-    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+    const message = error instanceof Error 
+    ? error.message 
+    : "Something went wrong";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
