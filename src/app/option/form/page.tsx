@@ -50,7 +50,7 @@ function OptionForm({ options, setOptions, addOption }: OptionFormProps) {
           </div>
         ))}
 
-        {options.length < 3 && (
+        {options?.length < 3 && (
           <button
             type="button"
             onClick={handleAddOption}
