@@ -9,19 +9,25 @@ const UserMenu = () => {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
 
+  const avatarUrl =
+    user?.user_metadata?.avatar_url || // Google
+    user?.user_metadata?.picture; // Facebook
+
   return (
     <div className="relative ">
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 px-3 py-2 bg-rose-100 cursor-pointer rounded-4xl hover:bg-rose-400 hover:scale-105 transition-all duration-300 "
       >
-        {user?.user_metadata?.avatar_url || user?.user_metadata.picture && (
+        <div className="relative w-8 h-8">
           <Image
-            src={user.user_metadata.avatar_url || user.user_metadata.picture}
-            className="w-8 h-8 rounded-full"
+            src={avatarUrl || "/avatar.png"}
             alt="avatar"
+            fill
+            className="rounded-full object-cover"
           />
-        )}
+        </div>
+
         <span className="text-sm font-medium ">
           {user?.user_metadata.full_name || user?.email}
         </span>
