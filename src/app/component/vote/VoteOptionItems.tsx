@@ -26,7 +26,6 @@ export const VoteOptionItem: React.FC<VoteOptionItemProps> = ({
   remainingVotes,
   handleAddVote,
   handleRemoveVote,
-  handleDeleteOption,
 }) => {
   const isMyOption = option.user_id === user?.id;
   const myVoteCount = myVotes.filter((vote) => vote.option_id === option.id).length;

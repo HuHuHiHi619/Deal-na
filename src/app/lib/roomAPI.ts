@@ -11,14 +11,16 @@ export async function createRoomAPI(
     headers: { "Content-Type": "application/json" , 'Authorization': `Bearer ${session?.access_token}` },
     body: JSON.stringify({ title, options, userId }),
   });
-  if (!res.ok) throw new Error("Failed to create room");
-  return res.json();
+
+  const data = await res.json()
+
+  if (!res.ok || data.error) throw new Error(data.error || "Failed to create room");
+
+  return data;
 }
 
-
-
 export async function joinRoomAPI(roomId: string, userId: string) {
-  console.log('joinRoomAPI called with roomId:', roomId, 'and userId:', userId);
+ 
   const res = await fetch(`/api/room/${roomId}`, {
     method: "POST",
     headers: {
@@ -26,7 +28,7 @@ export async function joinRoomAPI(roomId: string, userId: string) {
     },
     body: JSON.stringify({ roomId , userId }),
   });
-  console.log('joinRoomAPI response:', res);
+  
   const data = await res.json();
   
   

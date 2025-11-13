@@ -7,7 +7,7 @@ import { useRoomMemberStore } from "./useRoomMemberStore";
 export const useRoomRealtimeStore = create<RealtimeStore>((set, get) => ({
   channel: null,
   subscribe: (roomId: string) : Promise<void> => {
-    return new Promise((resolve , reject) => {
+    return new Promise((resolve) => {
       
       const { createRoom } = useRoom.getState();
       const { addMember } = useRoomMemberStore.getState();

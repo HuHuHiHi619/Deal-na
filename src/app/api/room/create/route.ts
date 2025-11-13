@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     }
     if (!newRoom) return NextResponse.json({ error: "Failed to create room" });
 
-    const { data: owner, error: ownerError } = await supabase
+    const { error: ownerError } = await supabase
       .from("room_members")
       .insert([{ user_id: userId, room_id: newRoom.id }])
       .select("id")

@@ -1,4 +1,3 @@
-import { error } from "console";
 import { supabase } from "../lib/supabase";
 
 export interface VoteProps {

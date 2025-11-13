@@ -1,4 +1,3 @@
-// components/vote/VoteResultsList.tsx
 import { VoteResultItem } from "./VoteResultItem";
 
 interface VoteResult {

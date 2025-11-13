@@ -7,7 +7,7 @@ import VoteOptions from "@/app/room/[roomId]/vote/page";
 import { useAuth } from "@/app/store/auth/useAuth";
 import { useRoomLifecycle } from "@/app/hooks/useRoomLifeCycle";
 import { RoomGuard } from "@/app/component/room/RoomGuard";
-import { AppWindow, Vote } from "lucide-react";
+import { AppWindow } from "lucide-react";
 
 export default function RoomPage() {
   const { roomId }: { roomId: string } = useParams();

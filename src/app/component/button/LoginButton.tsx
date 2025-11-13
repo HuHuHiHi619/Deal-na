@@ -43,10 +43,10 @@ return (
     <div className="flex justify-center bg-gray-200 cursor-pointer hover:scale-105 p-4 space-x-3 rounded-3xl transition-all ease-in-out duration-250 disabled:opacity-50">
       <GoogleIcon/>
       <button 
-        onClick={() => fb.execute(() => loginWithGoogle())}
-        disabled={fb.isLoading}
+        onClick={() => gg.execute(() => loginWithGoogle())}
+        disabled={gg.isLoading}
         >
-        {fb.isLoading ? "Logging in..." : "Login with Google"}
+        {gg.isLoading ? "Logging in..." : "Login with Google"}
       </button>
     </div>
   </>

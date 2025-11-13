@@ -1,5 +1,4 @@
 import { useAuth } from "../store/auth/useAuth";
-import { useMockAuth } from "../store/auth/useMockAuth";
 import { useRoom } from "../store/room/useRoomStore";
 
 export function getRequiredContext() {

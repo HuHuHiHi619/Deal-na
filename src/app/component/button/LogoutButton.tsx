@@ -3,15 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../store/auth/useAuth";
 import { useAsyncAction } from "../../hooks/useAsyncAction";
-import { useMockAuth } from "@/app/store/auth/useMockAuth";
 import { LogOutIcon } from "lucide-react";
 
 export default function LogoutButton({ mini = false }) {
   const { signOut } = useAuth();
-  const { mockUser, logout } = useMockAuth();
   const router = useRouter();
 
-  const { execute, isLoading, error } = useAsyncAction("signOut", {
+  const { execute, isLoading  } = useAsyncAction("signOut", {
     onSuccess: () => {
       router.push("/");
     },
@@ -22,10 +20,6 @@ export default function LogoutButton({ mini = false }) {
 
   const handleLogout = async () => {
     await execute(async () => {
-      if (mockUser) {
-        logout();
-        return;
-      }
       return await signOut();
     });
   };

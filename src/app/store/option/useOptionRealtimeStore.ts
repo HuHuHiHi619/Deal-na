@@ -14,7 +14,7 @@ export const useOptionRealtimeStore = create<RealtimeStore>(
   (set, get) => ({
     channel: null,
     subscribe: (roomId: string) : Promise<void> => {
-      return new Promise((resolve , reject) => {
+      return new Promise((resolve) => {
         
         const { addOption, removeOption } = useOptionStore.getState();
         const channel = supabase

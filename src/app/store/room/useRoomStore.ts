@@ -40,7 +40,7 @@ interface RoomState {
     options: string[],
     userId: string
   ) => Promise<void>;
-  joinRoom: (roomId: string, userId: string) => Promise<any>;
+  joinRoom: (roomId: string, userId: string) => Promise<Room | null>;  // แก้ any
   exitRoom: () => void;
 }
 
@@ -91,7 +91,7 @@ export const useRoom = create<RoomState>()(
         const state = get();
         if (state.isJoin) {
           console.log("room already joined");
-          return;
+          return null
         }
 
         set({ error: null, isJoin: true });

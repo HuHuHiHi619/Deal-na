@@ -59,10 +59,10 @@ export function useRoomLifecycle(roomId: string) {
         setIsJoining(false);
       });
 
-    // ❌ ไม่ต้อง return cleanup function ที่นี่
-  }, [roomId, user?.id, pathname, joinRoom, subscribeAll]);
+    //  ไม่ต้อง return cleanup function 
+  }, [roomId, user, user?.id, pathname, joinRoom, subscribeAll]);
 
-  // 🔹 Effect สำหรับ exit ห้องเมื่อเปลี่ยนหน้า
+ 
   useEffect(() => {
     const isInRoomPage = pathname.startsWith("/room/") && !!roomId;
     const lifecycle = lifecycleRef.current;

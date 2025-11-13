@@ -16,7 +16,8 @@ export default function ShareRoom() {
   const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
-    if (currentRoom && isLoading('popupQr')) {
+     const popupQrLoading = isLoading("popupQr");
+    if (currentRoom && popupQrLoading) {
     
       const timer = setTimeout(() => {
         setShowContent(true);
@@ -24,7 +25,7 @@ export default function ShareRoom() {
 
       return () => clearTimeout(timer);
     }
-  }, [currentRoom, isLoading('popupQr')]);
+  }, [currentRoom, isLoading]);
 
   if (!currentRoom) return null;
 
