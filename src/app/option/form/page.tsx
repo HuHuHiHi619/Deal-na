@@ -36,7 +36,7 @@ function OptionForm({ options, setOptions, addOption }: OptionFormProps) {
      <div>
     
       <form className="space-y-3">
-        {options.map((option: string, index: number) => (
+        {options?.map((option: string, index: number) => (
           <div key={index} className="flex items-center  space-x-2">
             <input
               type="text"

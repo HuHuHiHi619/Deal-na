@@ -1,0 +1,19 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Users\Time\AppData\Roaming\npm\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.2.0
+2 info using node@v22.14.0
+3 silly config load:file:C:\Users\Time\AppData\Roaming\npm\node_modules\npm\npmrc
+4 warn Unknown cli config "--fix". This will stop working in the next major version of npm.
+5 silly config load:file:C:\Users\Time\Documents\FRONTEND\deal-na\.npmrc
+6 silly config load:file:C:\Users\Time\.npmrc
+7 silly config load:file:C:\Users\Time\AppData\Roaming\npm\etc\npmrc
+8 verbose title npm eslint .eslintcache src
+9 verbose argv "eslint" "--cache" "--cache-location" ".eslintcache" "--fix" "src"
+10 verbose logfile logs-max:10 dir:C:\Users\Time\Documents\FRONTEND\deal-na\--cache-location\_logs\2025-11-13T06_25_31_028Z-
+11 verbose logfile C:\Users\Time\Documents\FRONTEND\deal-na\--cache-location\_logs\2025-11-13T06_25_31_028Z-debug-0.log
+12 silly logfile done cleaning log files
+13 verbose cwd C:\Users\Time\Documents\FRONTEND\deal-na
+14 verbose os Windows_NT 10.0.22621
+15 verbose node v22.14.0
+16 verbose npm  v11.2.0
+17 verbose exit 1
+18 verbose code 1

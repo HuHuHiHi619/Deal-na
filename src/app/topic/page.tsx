@@ -48,7 +48,8 @@ export default function TopicPage() {
       console.log("title is :", rawTitle);
       setTitle(rawTitle);
       setError("rawTitle", null);
-    } catch (error : unknown) {
+    } catch (err : unknown) {
+      console.error("Create topic error:", err);
       setError("rawTitle", "Failed to create topic. Please try again.");
     }
   };

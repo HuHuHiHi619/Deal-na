@@ -5,7 +5,7 @@ export async function createRoomAPI(
   options: string[],
   userId: string
 ) {
-  const { data : { session } , error } = await supabase.auth.getSession();
+  const { data : { session } } = await supabase.auth.getSession();
   const res = await fetch("/api/room/create", {
     method: "POST",
     headers: { "Content-Type": "application/json" , 'Authorization': `Bearer ${session?.access_token}` },

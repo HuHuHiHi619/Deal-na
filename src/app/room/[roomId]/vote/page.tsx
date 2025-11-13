@@ -44,7 +44,7 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
       }, 1000);
       return () => clearTimeout(timeout);
     }
-  }, [readyMembers, totalMembers]);
+  }, [readyMembers, totalMembers , router , setLoading]);
 
   if (!user) return;
 

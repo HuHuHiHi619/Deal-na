@@ -7,7 +7,7 @@ import { useVoteStore, Vote } from "./useVoteStore";
 export const useVoteRealtimeStore = create<RealtimeStore>((set, get) => ({
   channel: null,
   subscribe: (roomId: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const { addVote, deleteVote } = useVoteStore.getState();
       const channel = supabase
         .channel("votes")
