@@ -1,7 +1,8 @@
+
 import React from "react";
-import OptionForm from "./form/page";
 import { useRoomForm } from "../store/useRoomForm";
 import { PlusCircle } from "lucide-react";
+import OptionForm from "../component/room/OptionForm";
 
 function OptionsPage() {
   const { titleInput, optionsInput, setOptionsInput, addOptionInput } =
