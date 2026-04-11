@@ -1,15 +1,15 @@
 import React from "react";
 import { Trash } from "lucide-react";
 
-interface DeleteOptionButtonProps {
+export interface DeleteOptionButtonProps {
   onClick: () => void;
   disabled?: boolean;
 }
 
-export const DeleteOptionButton: React.FC<DeleteOptionButtonProps> = ({
+export default function DeleteOptionButton({
   onClick,
   disabled = false,
-}) => {
+}: DeleteOptionButtonProps) {
   return (
     <button
       onClick={onClick}
@@ -19,4 +19,4 @@ export const DeleteOptionButton: React.FC<DeleteOptionButtonProps> = ({
       <Trash size={16} className="text-rose-500" />
     </button>
   );
-};
+}

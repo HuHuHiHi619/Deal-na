@@ -1,35 +1,11 @@
-'use client';
-import { useParams, useRouter } from "next/navigation";
+"use client";
+
 import React from "react";
-import { useRoom } from "../../store/room/useRoomStore";
-import { useRealtimeRoom } from "../../hooks/useRealtimeRoom";
 import { X } from "lucide-react";
-import { useAsyncAction } from "../../hooks/useAsyncAction";
+import { useExitRoom } from "@/app/hooks/useExitRoom";
 
-function ExitRoomButton() {
-  const router = useRouter();
-  const { roomId }: { roomId: string } = useParams();
-  const { exitRoom } = useRoom();
-  const { unsubscribeAll } = useRealtimeRoom(roomId);
-
-  const { execute, isLoading, error } = useAsyncAction("exitRoom", {
-    onSuccess: () => {
-      router.replace("/room");
-    },
-    onError: (err) => {
-      console.log("Exit room error:", err);
-    },
-  });
-
-  const handleExit = async () => {
-    const confirmed = confirm("Are you sure you want to exit the room?");
-    if (!confirmed) return;
-    
-    await execute(async () => {
-      unsubscribeAll();
-      exitRoom();
-    });
-  };
+ export default function ExitRoomButton() {
+  const { handleExit, isLoading, error } = useExitRoom();
 
   return (
     <>
@@ -47,4 +23,3 @@ function ExitRoomButton() {
   );
 }
 
-export default ExitRoomButton;
