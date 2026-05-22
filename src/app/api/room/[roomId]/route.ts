@@ -1,15 +1,24 @@
-import { supabase } from "@/app/lib/supabase";
+import { getServerUser, supabase } from "@/app/lib/supabase";
 import { NextResponse } from "next/server";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ roomId: string }> }
 ) {
-  console.log("Request received at /api/room/[roomId]");
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return NextResponse.json({ error: "Missing Authorization header" }, { status: 401 });
+    }
+    const token = authHeader.replace("Bearer ", "");
+
+    const { user, error: userError } = await getServerUser(token);
+    if (!user || userError) {
+      return NextResponse.json({ error: "User not found or session invalid" }, { status: 401 });
+    }
+
     const { roomId } = await params;
     const { userId } = await req.json();
-    console.log( 'roomId' ,roomId)
 
     if (!roomId || !userId) {
       return NextResponse.json(
@@ -25,7 +34,6 @@ export async function POST(
       .single();
 
     if (roomError || !room) {
-      console.log('Room not found');
       return NextResponse.json({ error: "Room not found" });
     }
 
@@ -39,7 +47,6 @@ export async function POST(
       
 
      if (existingMember) {
-       console.log("✅ User already in room, returning existing data");
       return NextResponse.json({
         newMemberId: existingMember.id,
         room: {
@@ -65,8 +72,6 @@ export async function POST(
       .select("id, user_id, room_id, join_at") 
       .single();
     if (newMemberError) throw newMemberError;
-
-    console.log('New member:', newMember);
 
     return NextResponse.json({
       newMemberId: newMember.id,

@@ -23,7 +23,6 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
     if (!user && !hasRedirectedRef.current) {
       hasRedirectedRef.current = true;
-      console.log("AuthGuard: No user found. Redirecting to login.");
       router.replace(`/?redirect=${encodeURIComponent(pathname)}`);
     }
 

@@ -2,8 +2,6 @@ import { getServerUser, supabase } from "@/app/lib/supabase";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  console.log("Request received at /api/room/create");
-
   try {
 
     const authHeader = req.headers.get("Authorization");
@@ -11,7 +9,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing Authorization header" }, { status: 401 });
     }
     const token = authHeader.replace("Bearer ", "");
-    console.log('authHeader and token :', authHeader, token);
 
     const { user , error : userError } = await getServerUser(token)
 
@@ -26,12 +23,17 @@ export async function POST(req: Request) {
     const { title, options } = body;
 
     if (!title || !options || !Array.isArray(options) || options.length === 0)
-      return NextResponse.json({ error: "Invalid options" });
+      return NextResponse.json({ error: "Invalid options" }, { status: 400 });
 
     let roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
     let isUnique = false;
+    let attempts = 0;
+    const MAX_RETRIES = 5;
     const origin = new URL(req.url).origin;
     while (!isUnique) {
+      if (attempts >= MAX_RETRIES)
+        return NextResponse.json({ error: "Failed to generate unique room code" }, { status: 500 });
+      attempts++;
       const { data } = await supabase
         .from("room")
         .select("id")
@@ -42,7 +44,6 @@ export async function POST(req: Request) {
       } else {
         roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       }
-      console.log("check room_code:", roomCode, "found:", data);
     }
 
     const { data: newRoom, error: newRoomError } = await supabase
@@ -52,10 +53,8 @@ export async function POST(req: Request) {
       .single();
     if (newRoomError) {
       console.error("Insert error:", newRoomError.message);
-    } else {
-      console.log("Inserted room:", newRoom);
     }
-    if (!newRoom) return NextResponse.json({ error: "Failed to create room" });
+    if (!newRoom) return NextResponse.json({ error: "Failed to create room" }, { status: 500 });
 
     const { error: ownerError } = await supabase
       .from("room_members")

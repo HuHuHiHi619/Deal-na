@@ -4,7 +4,6 @@ import { ReactNode, useEffect, useRef } from "react";
 import { useAuth } from "../store/auth/useAuth";
 import { supabase } from "../lib/supabase";
 import { useUiStore } from "../store/useUiStore";
-import { useRouter } from "next/navigation";
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -14,7 +13,6 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   const { setUser, setSession  } = useAuth();
   const { setLoading } = useUiStore();
   const mountedRef = useRef(true);
-  const router = useRouter()
   const initializedRef = useRef(false);
 
   useEffect(() => {
@@ -27,7 +25,6 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     const initilizeAuth = async () => {
      
       try {
-          console.log("Using real authentication");
           const {
             data: { session },
             error,
@@ -71,6 +68,6 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       mountedRef.current = false
       subscription.unsubscribe()
     }
-  }, [setUser , setSession , setLoading , router ]);
+  }, [setUser, setSession, setLoading]);
   return <>{children}</>;
 }

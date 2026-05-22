@@ -1,20 +1,28 @@
-import { supabase } from "@/app/lib/supabase";
+import { getServerUser, supabase } from "@/app/lib/supabase";
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request) {
-  
-  const url = new URL(req.url);
-  const pathSegments = url.pathname.split('/');
-  const roomId = pathSegments[pathSegments.length - 1]; 
-  
-  if (!roomId) {
-    return NextResponse.json({ error: 'Room Code not found' }, { status: 400 });
-  }
-
-  console.log('roomId parsed from URL:', roomId);
-
-
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ roomId: string }> }
+) {
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return NextResponse.json({ error: "Missing Authorization header" }, { status: 401 });
+    }
+    const token = authHeader.replace("Bearer ", "");
+
+    const { user, error: userError } = await getServerUser(token);
+    if (!user || userError) {
+      return NextResponse.json({ error: "User not found or session invalid" }, { status: 401 });
+    }
+
+    const { roomId } = await params;
+
+    if (!roomId) {
+      return NextResponse.json({ error: 'Room Code not found' }, { status: 400 });
+    }
+
     const { data: room, error: roomError } = await supabase
       .from('room')
       .select('id')
@@ -31,7 +39,6 @@ export async function GET(req: Request) {
       .order('id', { ascending: true });
 
     if (optionsError) {
-      console.log("optionsError :", optionsError.message);
       throw optionsError;
     };
 
