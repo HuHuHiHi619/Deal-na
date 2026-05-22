@@ -68,16 +68,18 @@ export const useAuth = create<AuthState>((set) => ({
 
   loginWithProvider : async <P extends AuthProvider>(provider : P , options? : ProviderOptions[P]) => {
     switch (provider) {
-      case 'facebook' : 
-      case 'google' : 
+      case 'facebook' :
+      case 'google' : {
+        const redirectPath = new URLSearchParams(window.location.search).get('redirect') ?? '/room';
         const { error : oauthError } = await supabase.auth.signInWithOAuth({
           provider,
           options : {
-              redirectTo: `${window.location.origin}/room`,
+              redirectTo: `${window.location.origin}${redirectPath}`,
           },
         });
         if (oauthError) throw oauthError;
-      break;
+        break;
+      }
 
       case 'email' :
         if (!options) throw new Error('Options are required for email login');

@@ -36,19 +36,18 @@ export default function AuthProvider({ children }: AuthProviderProps) {
           if (mountedRef.current) {
             setSession(session);
             setUser(session?.user ?? null);
-            setLoading("loadingSession", false);
           }
-        
+
       } catch (error) {
         console.error("Auth initialization error:", error);
         if (mountedRef.current) {
           setSession(null);
           setUser(null);
-          
-          setLoading("loadingSession", false);
         }
       } finally {
-        setLoading("loadingSession", false);
+        if (mountedRef.current) {
+          setLoading("loadingSession", false);
+        }
       }
     };
 

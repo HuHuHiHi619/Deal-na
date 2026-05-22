@@ -41,13 +41,13 @@ export function useRoomLifecycle(roomId: string) {
     setIsJoining(true);
 
     joinRoom(roomId, user.id)
-      .then(() => {
+      .then(async () => {
         lifecycle.hasJoinedInternal = true;
         lifecycle.isJoiningInternal = false;
         setIsJoining(false);
         setIsJoined(true);
 
-        subscribeAll();
+        await subscribeAll();
         lifecycle.onRoomJoined?.();
       })
       .catch((err) => {
