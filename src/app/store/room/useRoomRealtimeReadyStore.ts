@@ -15,9 +15,6 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set, get) => ({
   channel: null,
   subscribe: (roomId: string, userId?: string): Promise<void> => {
     return new Promise((resolve, reject) => {
-      console.log(
-        `🎯 [READY-STORE] subscribe called with roomId: ${roomId}, userId: ${userId}`
-      );
       const { setReady } = useRoomReadyStore.getState();
 
       const presenceConfig = userId ? { key: userId } : undefined;
@@ -30,29 +27,19 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set, get) => ({
         })
         .on("presence", { event: "sync" }, () => {
           const state = ch.presenceState<PresencePayload>();
-          console.log("🟡 Presence sync event received:", state);
-
           const allUsers = Object.keys(state);
           const totalInRoom = allUsers.length;
-          console.log(`🟡 All users in room : ${totalInRoom} :`, allUsers);
           useRoomReadyStore.getState().setTotalMembers(totalInRoom);
 
           const readyUsers = allUsers.filter(
             (key) => state[key]?.[0]?.isReady === true
           );
-          console.log("🟡 Ready users in room :", readyUsers);
           setReady(readyUsers);
         })
-        .on("presence", { event: "join" }, ({ key, newPresences }) => {
-          console.log("🟡 Presence join event received:", key, newPresences);
-        })
-        .on("presence", { event: "leave" }, ({ key, leftPresences }) => {
-          console.log("🟡 Presence leave event received:", key, leftPresences);
-        })
+        .on("presence", { event: "join" }, () => {})
+        .on("presence", { event: "leave" }, () => {})
         .subscribe(async (status) => {
           if (status === "SUBSCRIBED") {
-            console.log(`🟡 Subscribed to room-ready-${roomId} channel`);
-
             set({ channel: ch });
 
             // Track user in room
@@ -64,19 +51,21 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set, get) => ({
                   joinedAt: new Date().toISOString(),
                 });
 
-                await new Promise<void>((resolveTrack) => {
+                await new Promise<void>((resolveTrack, rejectTrack) => {
+                  const MAX_RETRIES = 30;
+                  let retries = 0;
                   const checkState = () => {
                     const state = ch.presenceState<PresencePayload>();
-                    if(state[userId]){
-                      console.log('user presence confirmed')
-                      resolveTrack()
+                    if (state[userId]) {
+                      resolveTrack();
+                    } else if (retries >= MAX_RETRIES) {
+                      rejectTrack(new Error("Presence track timed out"));
                     } else {
-                      setTimeout(() => {
-                        checkState()
-                      }, 100);
+                      retries++;
+                      setTimeout(checkState, 100);
                     }
-                  }
-                  checkState()
+                  };
+                  checkState();
                 })
 
               } catch (err) {
@@ -85,10 +74,6 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set, get) => ({
                   err
                 );
               }
-            } else {
-              console.log(
-                "⚠️ [READY-STORE] No userId provided — skipping track()"
-              );
             }
 
             // sync state
@@ -119,10 +104,7 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set, get) => ({
   },
 
   sendReady: async (userId: string) => {
-    console.log(`🟡 Attempting to send ready for user: ${userId}`);
-
     const { channel } = get();
-    console.log("🔍 Current channel state:", channel);
 
     if (!channel) {
       console.error("❌ Channel not found");
@@ -135,8 +117,6 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set, get) => ({
     }
 
     try {
-      // Update presence state to isReady: true
-      console.log("📤 Tracking presence as ready...");
       const trackResult = await channel.track({
         userId,
         isReady: true,
@@ -144,7 +124,6 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set, get) => ({
       });
 
       if (trackResult === "ok") {
-        console.log("✅ Presence tracked successfully");
         return true;
       } else {
         console.error("❌ Track failed:", trackResult);
@@ -160,7 +139,6 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set, get) => ({
     const { channel } = get();
     if (channel) {
       try {
-        console.log("🔌 [READY-STORE] Unsubscribing and untracking");
         channel.untrack();
       } catch (err) {
         console.warn("⚠️ untrack failed:", err);

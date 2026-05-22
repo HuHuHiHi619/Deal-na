@@ -35,13 +35,8 @@ export function RoomGuard({
       <LoadingPage title="Checking authentication..." subtitle="please wait" />
     );
   }
-  if (!currentRoom) {
-  console.log("⚠️ RoomGuard detected missing room", { currentRoom, isJoining, error });
-}
-
   // 2️⃣ มี error
   if (errorMessage) {
-     console.log("🚨 error guard triggered:", errorMessage);
     return (
       <ErrorPage
         error={errorMessage}

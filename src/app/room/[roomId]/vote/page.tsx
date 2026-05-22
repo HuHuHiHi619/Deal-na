@@ -34,8 +34,6 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
   useEffect(() => {
     const roomId = useRoom.getState().currentRoom?.id || "";
 
-    console.log(`Ready: ${readyMembers.length}/${totalMembers}`);
-
     if (totalMembers >= 2 && readyMembers.length === totalMembers) {
       setLoading("resultLoading", true);
 

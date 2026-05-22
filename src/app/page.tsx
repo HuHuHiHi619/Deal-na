@@ -7,7 +7,7 @@ import TestUserLoginButton from "./component/button/TestUserLoginButton";
 export default function Home() {
  
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       {/* CONTAINER */}
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 md:p-12 space-y-8">
         {/* HEADER */}

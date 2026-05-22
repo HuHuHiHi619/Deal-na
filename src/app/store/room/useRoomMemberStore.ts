@@ -9,7 +9,11 @@ interface RoomMemberStore {
 
 export const useRoomMemberStore = create<RoomMemberStore>((set , get) => ({
     members : [],
-    addMember : (userId: string) => set({ members : [...get().members , userId ] }),
+    addMember : (userId: string) => {
+        const { members } = get();
+        if (members.includes(userId)) return;
+        set({ members: [...members, userId] });
+    },
     removeMember : (userId: string) => set({ members : get().members.filter(member => member !== userId) }),
     clearMembers : () => set({ members : [] })
 }))

@@ -15,32 +15,24 @@ export function useRealtimeRoom(roomId: string | undefined) {
   const { subscribe: subscribeReady, unsubscribe: unsubscribeReady } =
     useRoomRealtimeReadyStore();
 
-  console.log("🟢 useRealtimeRoom called with roomId:", roomId); // 👈 เพิ่ม log นี้
-
   const subscribedRoomIdRef = useRef<string | undefined>(undefined);
   const { user } = useAuth();
 
   const subscribeAll =  useCallback(async () => {
 
     if (!roomId) {
-      console.log("❌ No roomId, skipping subscription");
       return;
     }
 
     if (!user?.id) {
-      console.log("❌ No user, skipping subscription");
       return;
     }
 
     if (subscribedRoomIdRef.current === roomId) {
-      console.log("✅ Already subscribed to roomId:", roomId);
       return;
     }
 
-    console.log("📡 Starting subscriptions for room:", roomId);
-
     try {
-      // ✅ รอให้ทุก subscription เสร็จ
       await Promise.allSettled([
         subscribeRoom(roomId),
         subscribeOption(roomId),
@@ -49,8 +41,6 @@ export function useRealtimeRoom(roomId: string | undefined) {
       ]);
       
       subscribedRoomIdRef.current = roomId;
-      console.log("✅ All subscriptions completed for room:", roomId);
-      
     } catch (error) {
       console.error("❌ Subscription error:", error);
       subscribedRoomIdRef.current = undefined;
@@ -59,7 +49,6 @@ export function useRealtimeRoom(roomId: string | undefined) {
   ;
 
   const unsubscribeAll = useCallback(async () => {
-    console.log("🟡 Manual unsubscribe called");
     try {
       await Promise.allSettled([
         unsubscribeRoom(),

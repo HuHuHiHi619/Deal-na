@@ -27,14 +27,9 @@ export default function RoomPage() {
   } = useRoomLifecycle(roomId);
 
   useEffect(() => {
-  console.log("🎯 useEffect[RoomPage] triggered", { roomId, user });
-}, [roomId, user]);
-
-  useEffect(() => {
     if (!user) return;
 
    setOnRoomJoined(async () => {
-      console.log("🟢 Room joined callback executed");
       await fetchOption(roomId);
       addMember(user.id);
     });

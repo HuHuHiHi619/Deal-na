@@ -58,8 +58,7 @@ export const useRoom = create<RoomState>()(
 
       createRoom: async (title: string, options: string[], userId: string) => {
         set({ error: null });
-        console.log("create room input", { title, options, userId });
-        
+        try {
           const data = await createRoomAPI(title, options, userId);
 
           const room: Room = {
@@ -70,7 +69,7 @@ export const useRoom = create<RoomState>()(
             createdAt: data.room.createdAt || new Date().toISOString(),
             expiredAt:
               data.room.expiredAt ||
-              new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), //  24 ชั่วโมง
+              new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
             url: data.room.url,
             options: data.options,
           };
@@ -81,7 +80,11 @@ export const useRoom = create<RoomState>()(
           });
 
           useOptionStore.getState().setOptions(data.options || []);
-       
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : "Failed to create room";
+          set({ error: message });
+          throw error;
+        }
       },
 
       // Join room
@@ -90,14 +93,12 @@ export const useRoom = create<RoomState>()(
 
         const state = get();
         if (state.isJoin) {
-          console.log("room already joined");
           return null
         }
 
         set({ error: null, isJoin: true });
         try {
           const data = await joinRoomAPI(roomId, userId);
-          console.log("📦 joinRoom API response:", data);
 
           if (data.error) {
             throw new Error(data.error);
@@ -130,8 +131,6 @@ export const useRoom = create<RoomState>()(
             options: data.options || [],
           };
 
-          console.log("✅ Room data processed:", room);
-
           set({
             currentRoom: room,
             hasExit: false,
@@ -144,11 +143,11 @@ export const useRoom = create<RoomState>()(
           return room;
         } catch (error: unknown) {
           console.error("❌ Failed to join room:", error);
-          const message = error instanceof Error 
-            ? error.message 
+          const message = error instanceof Error
+            ? error.message
             : "Failed to join room";
 
-          set({ error: message });
+          set({ error: message, isJoin: false });
           throw error;
         } finally {
           useUiStore.getState().setLoading("joinRoomLoading", false);
@@ -157,8 +156,6 @@ export const useRoom = create<RoomState>()(
 
       // Clear room
       exitRoom: () => {
-        console.log("🚪 Exiting room...");
-
         // 1. Unsubscribe realtime ทุก channel
         const { unsubscribe: unsubRoom } = useRoomRealtimeStore.getState();
         const { unsubscribe: unsubOption } = useOptionRealtimeStore.getState();
@@ -171,14 +168,13 @@ export const useRoom = create<RoomState>()(
         unsubReady();
 
         // 2. Clear room data
-        set({ currentRoom: null, error: null, hasExit: true });
+        set({ currentRoom: null, error: null, hasExit: true, isJoin: false });
 
         // 3. Clear related stores 
         useVoteStore.getState().clearVotes?.();
         useRoomReadyStore.getState().clearReady?.();
         useRoomMemberStore.getState().clearMembers?.();
         useOptionStore.getState().setOptions([]);
-        console.log("✅ Room exited successfully");
       },
     }),
     {

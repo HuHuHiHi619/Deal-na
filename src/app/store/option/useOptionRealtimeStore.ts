@@ -18,7 +18,7 @@ export const useOptionRealtimeStore = create<RealtimeStore>(
         
         const { addOption, removeOption } = useOptionStore.getState();
         const channel = supabase
-        .channel("options")
+        .channel(`options:${roomId}`)
         .on<Option>(
           "postgres_changes",
           {
@@ -46,7 +46,6 @@ export const useOptionRealtimeStore = create<RealtimeStore>(
         )
        .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
-            console.log(`✅ Subscribed to options:${roomId}`);
             resolve();
           }
         });

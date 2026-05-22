@@ -40,8 +40,6 @@ export function useRoomLifecycle(roomId: string) {
     lifecycle.isJoiningInternal = true;
     setIsJoining(true);
 
-    console.log("Joining room...", roomId);
-
     joinRoom(roomId, user.id)
       .then(() => {
         lifecycle.hasJoinedInternal = true;
@@ -49,7 +47,6 @@ export function useRoomLifecycle(roomId: string) {
         setIsJoining(false);
         setIsJoined(true);
 
-        console.log("Room joined");
         subscribeAll();
         lifecycle.onRoomJoined?.();
       })
@@ -68,8 +65,6 @@ export function useRoomLifecycle(roomId: string) {
     const lifecycle = lifecycleRef.current;
 
     if (isInRoomPage || !isJoined) return;
-
-    console.log("User left room page, cleaning up...");
 
     setIsJoined(false);
     setIsJoining(false);

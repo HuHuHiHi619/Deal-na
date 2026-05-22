@@ -24,7 +24,7 @@ const ReadyButton: React.FC<{ userId: string }> = ({ userId }) => {
       setIsReady(true);
     },
     onError: (err) => {
-      console.log("Send ready error:", err);
+      console.error("Send ready error:", err);
     },
   });
 
@@ -48,7 +48,6 @@ const ReadyButton: React.FC<{ userId: string }> = ({ userId }) => {
       while (retries < maxRetries) {
         const { channel } = useRoomRealtimeReadyStore.getState();
         if (channel && channel.state === 'joined') {
-            console.log(`✅ Channel ready, sending ready (attempt ${retries + 1})`);
           const result = await sendReady(userId);
           if (!result)
             throw new Error("Failed to send ready. Please try again");

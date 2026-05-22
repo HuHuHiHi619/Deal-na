@@ -44,7 +44,6 @@ export const useVoteStore = create<VoteState>((set, get) => ({
     }
   },
   removeVote: (voteId) => {
-    console.log('remove vote in store received voteId' , voteId);
     set({ votes: get().votes.filter((v) => v.id !== voteId) });
   },
   clearVotes: () => set({ votes: [] }), 
@@ -54,7 +53,6 @@ export const useVoteStore = create<VoteState>((set, get) => ({
       const votes = await actionWrapper("fetchVoteLoading", {
         action: async ({ roomId }) => await getVoteAPI(roomId),
       });
-      console.log('fetch vote in store sent votes' , votes);
       set({ voteResults : votes });
   },
 
@@ -76,7 +74,6 @@ export const useVoteStore = create<VoteState>((set, get) => ({
         action: async ({ roomId, userId }) =>
           await deleteVote({ roomId, optionId, userId }),
       });
-      console.log('delete vote in store sent voteId' , voteId);
       if(success) {
         get().removeVote(voteId);
         await get().fetchVote();

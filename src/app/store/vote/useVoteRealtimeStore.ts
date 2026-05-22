@@ -10,7 +10,7 @@ export const useVoteRealtimeStore = create<RealtimeStore>((set, get) => ({
     return new Promise((resolve) => {
       const { addVote, deleteVote } = useVoteStore.getState();
       const channel = supabase
-        .channel("votes")
+        .channel(`votes:${roomId}`)
         .on<Vote>(
           "postgres_changes",
           {
@@ -37,7 +37,6 @@ export const useVoteRealtimeStore = create<RealtimeStore>((set, get) => ({
         )
         .subscribe((status) => {
           if (status === "SUBSCRIBED") {
-            console.log(`✅ Subscribed to vote:${roomId}`);
             resolve();
           }
         });

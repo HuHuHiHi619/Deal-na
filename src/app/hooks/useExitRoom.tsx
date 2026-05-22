@@ -14,7 +14,7 @@ export function useExitRoom() {
       router.replace("/room");
     },
     onError : (err) => {
-      console.log("Exit room error:", err);
+      console.error("Exit room error:", err);
     },
   });
 

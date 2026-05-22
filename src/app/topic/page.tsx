@@ -45,7 +45,6 @@ export default function TopicPage() {
     setLastSubmitTime(now);
 
     try {
-      console.log("title is :", rawTitle);
       setTitle(rawTitle);
       setError("rawTitle", null);
     } catch (err : unknown) {

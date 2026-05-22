@@ -17,7 +17,6 @@ function Page() {
 
   useEffect(() => {
     setLoading("resultLoading", false);
-    console.log("resultloading false");
   }, [setLoading]);
 
   useEffect(() => {

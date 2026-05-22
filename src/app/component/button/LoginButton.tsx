@@ -10,12 +10,12 @@ const { loginWithFacebook , loginWithGoogle  } = useAuth();
 
 const fb = useAsyncAction("loginWithFacebook", {
   onError: (err) => {
-    console.log("Login with facebook error:", err);
+    console.error("Login with Facebook error:", err);
   },
 });
 const gg = useAsyncAction("loginWithGoogle", {
   onError: (err) => {
-    console.log("Login with facebook error:", err);
+    console.error("Login with Google error:", err);
   },
 });
 

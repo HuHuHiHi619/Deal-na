@@ -12,11 +12,8 @@ export function useCreateRoom() {
     const { user } = useAuth()
 
     const { execute , isLoading , error } = useAsyncAction('createRoomLoading' , {
-        onSuccess: (data) => {
-            console.log("✅ Room created successfully:", data);
-        },
         onError: (err) => {
-            console.log("❌ Create room error:", err);
+            console.error("Create room error:", err);
         }
     })
 
