@@ -1,15 +1,15 @@
-import { getServerUser, supabase } from "@/app/lib/supabase";
+import { createServerClient, getServerUser} from "@/app/lib/supabase";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return NextResponse.json({ error: "Missing Authorization header" }, { status: 401 });
     }
     const token = authHeader.replace("Bearer ", "");
-
+    const supabase = createServerClient(token)
+    
     const { user , error : userError } = await getServerUser(token)
 
     if (!user || userError) {
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
 
     const { data: newRoom, error: newRoomError } = await supabase
       .from("room")
-      .insert([{ title: title, room_code: roomCode }])
+      .insert([{ title: title, room_code: roomCode , created_by : userId }])
       .select("id , room_code , title")
       .single();
     if (newRoomError) {

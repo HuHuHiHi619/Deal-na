@@ -1,4 +1,4 @@
-import { getServerUser, supabase } from "@/app/lib/supabase";
+import { createServerClient, getServerUser } from "@/app/lib/supabase";
 import { NextResponse } from "next/server";
 
 interface VoteResults {
@@ -14,7 +14,7 @@ export async function GET (req : Request){
           return NextResponse.json({ error: "Missing Authorization header" }, { status: 401 });
         }
         const token = authHeader.replace("Bearer ", "");
-
+        const supabase = createServerClient(token)
         const { user, error: userError } = await getServerUser(token);
         if (!user || userError) {
           return NextResponse.json({ error: "User not found or session invalid" }, { status: 401 });
