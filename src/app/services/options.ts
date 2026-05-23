@@ -31,7 +31,7 @@ export async function createOption({
 }: CreateOptionProps) {
   try {
     const optionsToInsert = options.map((opt) => ({
-      roomId: roomId,
+      room_id: roomId,
       title: opt,
       user_id: userId,
     }));
@@ -41,7 +41,7 @@ export async function createOption({
       .single();
 
     if (error) throw error;
-    return data[0];
+    return data;
   } catch (error) {
     console.error(error);
   }
@@ -52,16 +52,16 @@ export async function deleteOption({
   userId,
 }: DeleteOptionProps) {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("options")
       .delete()
       .eq("room_id", roomId)
       .eq("id", optionId)
-      .eq('user_id', userId)
-      .single();
+      .eq("user_id", userId)
+      .select();
 
     if (error) throw error;
-    return data[0];
+    return true;
   } catch (error) {
     console.error("deleteOption service error ",error);
     return false
