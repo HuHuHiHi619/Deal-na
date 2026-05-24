@@ -86,7 +86,7 @@ function TestUserLoginButton() {
                       email: testEmail,
                       password: "test123",
                     });
-                    if (!error) window.location.href = "/";
+                    if (!error) window.location.href = "/room";
                     else console.error(error.message);
                   }}
                   className="w-full text-left p-2 bg-white border rounded hover:bg-gray-50 text-sm"

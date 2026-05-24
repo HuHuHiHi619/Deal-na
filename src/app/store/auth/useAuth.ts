@@ -68,7 +68,16 @@ export const useAuth = create<AuthState>((set) => ({
     switch (provider) {
       case 'facebook' :
       case 'google' : {
-        const redirectPath = new URLSearchParams(window.location.search).get('redirect') ?? '/room';
+        const raw = new URLSearchParams(window.location.search).get('redirect') ?? '/room';
+        let redirectPath = '/room';
+        try {
+          const parsed = new URL(raw, window.location.origin);
+          if (parsed.origin === window.location.origin) {
+            redirectPath = parsed.pathname + parsed.search + parsed.hash;
+          }
+        } catch {
+          // malformed — fall back to /room
+        }
         const { error : oauthError } = await supabase.auth.signInWithOAuth({
           provider,
           options : {

@@ -23,7 +23,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     initializedRef.current = true
 
     const initilizeAuth = async () => {
-     
+      setLoading("loadingSession", true);
       try {
           const {
             data: { session },
