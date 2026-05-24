@@ -41,7 +41,6 @@ export interface AuthUser extends User {
  interface AuthState {
   user: AuthUser | null;
   session: Session | null;
-  setUser: (user: AuthUser | null) => void;
   setSession: (session: Session | null) => void;
 
   loginWithProvider: <P extends AuthProvider>(
@@ -59,11 +58,10 @@ export const useAuth = create<AuthState>((set) => ({
   user: null,
   session: null,
 
-  setUser: (user: AuthUser | null) => set({ user }),
   setSession: (session: Session | null) =>
     set({
       session,
-      user: session?.user,
+      user: session?.user ?? null,
     }),
 
   loginWithProvider : async <P extends AuthProvider>(provider : P , options? : ProviderOptions[P]) => {

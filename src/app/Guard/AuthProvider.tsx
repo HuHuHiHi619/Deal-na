@@ -10,7 +10,7 @@ interface AuthProviderProps {
 }
 
 export default function AuthProvider({ children }: AuthProviderProps) {
-  const { setUser, setSession  } = useAuth();
+  const { setSession } = useAuth();
   const { setLoading } = useUiStore();
   const mountedRef = useRef(true);
   const initializedRef = useRef(false);
@@ -35,14 +35,12 @@ export default function AuthProvider({ children }: AuthProviderProps) {
 
           if (mountedRef.current) {
             setSession(session);
-            setUser(session?.user ?? null);
           }
 
       } catch (error) {
         console.error("Auth initialization error:", error);
         if (mountedRef.current) {
           setSession(null);
-          setUser(null);
         }
       } finally {
         if (mountedRef.current) {
@@ -58,7 +56,6 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       
         if(mountedRef.current) {
           setSession(session);
-          setUser(session?.user ?? null);
         }
         setLoading('loadingSession', false)
       }
@@ -67,6 +64,6 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       mountedRef.current = false
       subscription.unsubscribe()
     }
-  }, [setUser, setSession, setLoading]);
+  }, [setSession, setLoading]);
   return <>{children}</>;
 }

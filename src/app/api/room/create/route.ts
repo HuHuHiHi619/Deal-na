@@ -1,20 +1,11 @@
-import { createServerClient, getServerUser} from "@/app/lib/supabase";
+import { requireAuth } from "@/app/lib/supabase";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return NextResponse.json({ error: "Missing Authorization header" }, { status: 401 });
-    }
-    const token = authHeader.replace("Bearer ", "");
-    const supabase = createServerClient(token)
-    
-    const { user , error : userError } = await getServerUser(token)
-
-    if (!user || userError) {
-      return NextResponse.json({ error: "User not found or session invalid" }, { status: 401 });
-    }
+    const auth = await requireAuth(req);
+    if (auth instanceof NextResponse) return auth;
+    const { user, supabase } = auth;
 
     const userId = user.id;
 
