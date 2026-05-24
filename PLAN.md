@@ -35,43 +35,35 @@ const { user, supabase } = auth;
 
 ---
 
-## Issue 2 — Direct Supabase writes bypass server auth perimeter [HIGH]
+## ~~Issue 2 — Direct Supabase writes bypass server auth perimeter~~ [DONE]
 
-**Problem:** `createOption`, `deleteOption`, `createVote`, `deleteVote` all call
-`createServerClient(token)` directly from the browser. They skip Next.js API routes,
-so no server-side validation, rate limiting, or application-layer enforcement exists
+**Problem:** `createOption`, `deleteOption`, `createVote`, `deleteVote` all called
+`createServerClient(token)` directly from the browser. They skipped Next.js API routes,
+so no server-side validation, rate limiting, or application-layer enforcement existed
 for any write to `options` or `votes`.
 
-**Fix:** Add four new API routes and route all mutations through them.
+**Fix:** Added four new API route handlers; all mutations now go through the server perimeter.
 
-### 2a — `POST /api/option/[roomId]`
-- Handler: `requireAuth` → insert into `options` using `user.id` (not body userId)
-- Remove direct call in `useOptionStore.createOption`
-- Delete `createOption` from `services/options.ts` (or leave as dead code to remove later)
+### ~~2a — `POST /api/option/[roomId]`~~ [DONE]
+- Added `POST` handler to existing `src/app/api/option/[roomId]/route.ts`
+- Inserts options with `user_id: user.id` from JWT — body userId never trusted
 
-### 2b — `DELETE /api/option/[optionId]`
-- Handler: `requireAuth` → delete where `id = optionId AND user_id = user.id`
-- The `user_id` filter enforces ownership server-side — body `userId` not trusted
-- Update `useOptionStore.deleteOption` to call this route
+### ~~2b — `DELETE /api/option/[roomId]/[optionId]`~~ [DONE]
+- New file: `src/app/api/option/[roomId]/[optionId]/route.ts`
+- Note: `[optionId]` at same level as `[roomId]` would collide in Next.js App Router — used nested route instead
+- Deletes where `id = optionId AND room_id = roomId AND user_id = user.id`
 
-### 2c — `POST /api/vote`
-- Body: `{ roomId, optionId }`
-- Handler: `requireAuth` → insert `{ room_id, option_id, user_id: user.id }`
-- Update `useVoteStore.createVote` to call this route
+### ~~2c — `POST /api/vote`~~ [DONE]
+- New file: `src/app/api/vote/route.ts`
+- Inserts `{ room_id, option_id, user_id: user.id }` from JWT
 
-### 2d — `DELETE /api/vote`
-- Body or query: `{ roomId, optionId }`
-- Handler: `requireAuth` → delete where `room_id = roomId AND option_id = optionId AND user_id = user.id`
-- Update `useVoteStore.deleteVote` to call this route
+### ~~2d — `DELETE /api/vote`~~ [DONE]
+- Same file as 2c
+- Deletes where `room_id = roomId AND option_id = optionId AND user_id = user.id`
 
-**Files to change:**
-- `src/app/api/option/[roomId]/route.ts` — add `POST` handler
-- `src/app/api/option/[optionId]/route.ts` — new file, `DELETE` handler
-- `src/app/api/vote/route.ts` — new file, `POST` + `DELETE` handlers
-- `src/app/store/option/useOptionStore.ts` — `createOption`, `deleteOption` call API routes
-- `src/app/store/vote/useVoteStore.ts` — `createVote`, `deleteVote` call API routes
-- `src/app/services/options.ts` — `createOption`, `deleteOption` can be removed
-- `src/app/services/votes.ts` — `createVote`, `deleteVote` can be removed
+**Also fixed:** Two stale callers (`useCreateRoom.tsx:27`, `useRoomLifeCycle.tsx:43`) still passing `userId` to `createRoom`/`joinRoom` after those signatures were previously cleaned up.
+
+**Remaining:** `services/options.ts` and `services/votes.ts` are now dead code → Issue 5.
 
 ---
 
@@ -175,7 +167,7 @@ still needed, name it `createAuthenticatedClient` and keep it clearly separate.
 | Step | Issue | Effort | Risk if skipped |
 |---|---|---|---|
 | ~~1~~ | ~~Fix join route body userId → `user.id`~~ | ~~Done~~ | ~~Active identity spoofing~~ |
-| 2 | Add POST/DELETE API routes for options + votes | ~2 hrs | Auth perimeter incomplete |
+| ~~2~~ | ~~Add POST/DELETE API routes for options + votes~~ | ~~Done~~ | ~~Auth perimeter incomplete~~ |
 | ~~3~~ | ~~Remove internal `getSession()` from `roomAPI.ts`~~ | ~~Done~~ | ~~Stale token 401s on refresh~~ |
 | ~~4~~ | ~~Remove redundant `getSession()` from AuthProvider~~ | ~~Done~~ | ~~Rare redirect race~~ |
 | 5 | Clean up / delete `services/options.ts` and `services/votes.ts` | ~15 min | Dead code confusion |

@@ -1,4 +1,3 @@
-import { createVote, deleteVote } from "@/app/services/votes";
 import { actionWrapper } from "@/app/utils/actionWrapper";
 import { create } from "zustand";
 import { getVoteAPI } from "@/app/lib/voteAPI";
@@ -58,8 +57,16 @@ export const useVoteStore = create<VoteState>((set, get) => ({
 
   createVote: async (optionId) => {
     const newVote = await actionWrapper("createVoteLoading", {
-      action: async ({ roomId, userId, token }) =>
-        await createVote({ roomId, optionId, userId, token }),
+      action: async ({ roomId, token }) => {
+        const res = await fetch('/api/vote', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomId, optionId }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const { vote } = await res.json();
+        return vote;
+      },
     });
     if (newVote) {
       useUiStore.getState().setError("sendReady", null);
@@ -70,8 +77,15 @@ export const useVoteStore = create<VoteState>((set, get) => ({
 
   deleteVote: async (voteId, optionId) => {
     const success = await actionWrapper("deleteVoteLoading", {
-      action: async ({ roomId, userId, token }) =>
-        await deleteVote({ roomId, optionId, userId, token }),
+      action: async ({ roomId, token }) => {
+        const res = await fetch('/api/vote', {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomId, optionId }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return true;
+      },
     });
     if (success) {
       get().removeVote(voteId);

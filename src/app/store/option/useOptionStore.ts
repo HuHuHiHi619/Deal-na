@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { useRoomForm } from "../useRoomForm";
-import { createOption, deleteOption } from "@/app/services/options";
 import { actionWrapper } from "@/app/utils/actionWrapper";
 
 export interface Option {
@@ -60,8 +59,13 @@ export const useOptionStore = create<OptionState>((set, get) => ({
     const validOptions = state.optionsInput.filter((option) => option !== "");
 
     await actionWrapper("createOptionLoading", {
-      action: async ({ roomId, userId, token }) => {
-        await createOption({ roomId, options: validOptions, userId, token });
+      action: async ({ roomId, token }) => {
+        const res = await fetch(`/api/option/${roomId}`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ options: validOptions }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
       },
       onSuccess: useRoomForm.getState().clearForm,
     });
@@ -69,8 +73,13 @@ export const useOptionStore = create<OptionState>((set, get) => ({
 
   deleteOption: async (optionId) => {
     await actionWrapper("deleteOptionLoading", {
-      action: async ({ roomId, userId, token }) =>
-        await deleteOption({ optionId, roomId, userId, token }),
+      action: async ({ roomId, token }) => {
+        const res = await fetch(`/api/option/${roomId}/${optionId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      },
     });
   },
 }));

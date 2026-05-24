@@ -40,7 +40,7 @@ export function useRoomLifecycle(roomId: string) {
     lifecycle.isJoiningInternal = true;
     setIsJoining(true);
 
-    joinRoom(roomId, user.id)
+    joinRoom(roomId)
       .then(async () => {
         lifecycle.hasJoinedInternal = true;
         lifecycle.isJoiningInternal = false;

@@ -24,7 +24,7 @@ export function useCreateRoom() {
             if(!valid) throw new Error(error)
             if(options === undefined) throw new Error('options is undefined')
 
-            const result = await createRoom(titleInput.trim() , options , user.id)
+            const result = await createRoom(titleInput.trim() , options)
 
             setLoading('popupQr' , true)
             setIsPopup(true)
