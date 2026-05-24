@@ -4,7 +4,7 @@ import { executeWithUI } from "./actionHelper";
 import { getRequiredContext } from "./context";
 
 interface ActionFunction<T> {
-  action: (context: { userId: string; roomId: string }) => Promise<T>;
+  action: (context: { userId: string; roomId: string; token: string }) => Promise<T>;
   onSuccess?: (data: T) => void;
   onError?: (error: unknown) => void;
 }

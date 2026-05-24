@@ -1,9 +1,11 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { createVote, deleteVote } from "./votes";
-import { supabase } from "../lib/supabase";
+import { createServerClient } from "../lib/supabase";
+
+const mockFrom = vi.hoisted(() => vi.fn());
 
 vi.mock("../lib/supabase", () => ({
-  supabase: { from: vi.fn() },
+  createServerClient: vi.fn(() => ({ from: mockFrom })),
 }));
 
 function buildChain(result: { data: unknown; error: unknown }) {
@@ -23,28 +25,28 @@ function buildChain(result: { data: unknown; error: unknown }) {
   return chain;
 }
 
-const mockFrom = vi.mocked(supabase.from);
-
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(createServerClient).mockReturnValue({ from: mockFrom } as never);
 });
 
 describe("createVote", () => {
-  const props = { roomId: "room-1", optionId: "opt-1", userId: "user-1" };
+  const props = { roomId: "room-1", optionId: "opt-1", userId: "user-1", token: "test-token" };
 
   it("returns vote data on success", async () => {
     const mockVote = { id: "vote-1", room_id: "room-1", option_id: "opt-1", user_id: "user-1" };
-    mockFrom.mockReturnValue(buildChain({ data: mockVote, error: null }) as never);
+    mockFrom.mockReturnValue(buildChain({ data: mockVote, error: null }));
 
     const result = await createVote(props);
 
+    expect(createServerClient).toHaveBeenCalledWith("test-token");
     expect(mockFrom).toHaveBeenCalledWith("votes");
     expect(result).toEqual(mockVote);
   });
 
   it("inserts correct vote shape", async () => {
     const chain = buildChain({ data: { id: "vote-1" }, error: null });
-    mockFrom.mockReturnValue(chain as never);
+    mockFrom.mockReturnValue(chain);
 
     await createVote(props);
 
@@ -55,7 +57,7 @@ describe("createVote", () => {
 
   it("returns false on error", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    mockFrom.mockReturnValue(buildChain({ data: null, error: { message: "insert failed" } }) as never);
+    mockFrom.mockReturnValue(buildChain({ data: null, error: { message: "insert failed" } }));
 
     const result = await createVote(props);
 
@@ -66,19 +68,20 @@ describe("createVote", () => {
 });
 
 describe("deleteVote", () => {
-  const props = { roomId: "room-1", optionId: "opt-1", userId: "user-1" };
+  const props = { roomId: "room-1", optionId: "opt-1", userId: "user-1", token: "test-token" };
 
   it("returns true on success", async () => {
-    mockFrom.mockReturnValue(buildChain({ data: null, error: null }) as never);
+    mockFrom.mockReturnValue(buildChain({ data: null, error: null }));
 
     const result = await deleteVote(props);
 
+    expect(createServerClient).toHaveBeenCalledWith("test-token");
     expect(result).toBe(true);
   });
 
   it("returns false on error", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    mockFrom.mockReturnValue(buildChain({ data: null, error: { message: "delete failed" } }) as never);
+    mockFrom.mockReturnValue(buildChain({ data: null, error: { message: "delete failed" } }));
 
     const result = await deleteVote(props);
 
@@ -89,7 +92,7 @@ describe("deleteVote", () => {
 
   it("filters by room_id, option_id, and user_id", async () => {
     const chain = buildChain({ data: null, error: null });
-    mockFrom.mockReturnValue(chain as never);
+    mockFrom.mockReturnValue(chain);
 
     await deleteVote(props);
 

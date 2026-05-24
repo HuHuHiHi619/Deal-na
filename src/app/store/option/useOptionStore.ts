@@ -18,7 +18,7 @@ export interface OptionState {
   removeOption: (optionId: string) => void;
 
   // API actions
-  fetchOption : (roomId : string) => Promise<void>
+  fetchOption: (roomId: string) => Promise<void>;
   createOption: (
     roomId: string,
     title: string,
@@ -42,32 +42,35 @@ export const useOptionStore = create<OptionState>((set, get) => ({
   },
 
   // API
-  fetchOption : async (roomId : string) => {
-    await actionWrapper("fetchOptionsLoading",{
-      action :async () => {
-        const response = await fetch(`/api/option/${roomId}`);
+  fetchOption: async (roomId: string) => {
+    await actionWrapper("fetchOptionsLoading", {
+      action: async ({ token }) => {
+        const response = await fetch(`/api/option/${roomId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         set({ options: data.options });
-      }
-    })
+      },
+    });
   },
-  
+
   createOption: async () => {
     const state = useRoomForm.getState();
     const validOptions = state.optionsInput.filter((option) => option !== "");
 
     await actionWrapper("createOptionLoading", {
-      action: async ({ roomId, userId }) => {
-        await createOption({ roomId, options: validOptions, userId });
+      action: async ({ roomId, userId, token }) => {
+        await createOption({ roomId, options: validOptions, userId, token });
       },
       onSuccess: useRoomForm.getState().clearForm,
     });
   },
+
   deleteOption: async (optionId) => {
-    await actionWrapper("deleteOptionLoading",{
-      action :async ({ roomId , userId }) => await deleteOption({optionId , roomId , userId})
-    }
-    );
+    await actionWrapper("deleteOptionLoading", {
+      action: async ({ roomId, userId, token }) =>
+        await deleteOption({ optionId, roomId, userId, token }),
+    });
   },
 }));

@@ -1,9 +1,11 @@
-export async function getVoteAPI(roomId: string) {
-  const res = await fetch(`/api/vote/result?roomId=${roomId}`);
+export async function getVoteAPI(roomId: string, token: string) {
+  const res = await fetch(`/api/vote/result?roomId=${roomId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!res.ok) {
     if (res.status === 404 || res.status === 204) return [];
     throw new Error("Failed to get votes");
   }
-  const data = await res.json()
-  return data.formattedResult
+  const data = await res.json();
+  return data.formattedResult;
 }

@@ -14,6 +14,7 @@
 | 3 | `TestUserLoginButton` quick-test buttons redirect to login page | Bug | — | |
 | 4 | Duplicated API auth boilerplate | Maintenance | — | ✅ done |
 | 5 | Redundant `setUser` alongside `setSession` | Cleanup | fix 2 (same file) | ✅ done |
+| 6 | Dual data-access pattern — services bypassing JWT auth | Security | — | ✅ done |
 
 ---
 
@@ -60,6 +61,16 @@
 ---
 
 ## Gap 5 — Redundant `setUser` alongside `setSession` ✅
+
+---
+
+## Gap 6 — Dual data-access pattern — services bypassing JWT auth ✅
+
+**Root cause:** `services/options.ts` and `services/votes.ts` used the anonymous `supabase` singleton for all mutations (createOption, deleteOption, createVote, deleteVote), bypassing the server-side JWT validation used by all API routes. Additionally, `fetchOption`, `fetchVote` (`getVoteAPI`), and `joinRoomAPI` were calling `requireAuth`-gated routes without an `Authorization` header.
+
+**Fix:** Extended `getRequiredContext()` to return `token` (throws `"Session expired. Please log in again."` if missing); widened `ActionFunction` context type to include `token`; updated services to use `createServerClient(token)` — no fallback to the singleton; added `Authorization` headers to all API fetches. Updated service tests to mock `createServerClient` and assert token is forwarded.
+
+**Files:** `utils/context.ts`, `utils/actionWrapper.ts`, `services/options.ts`, `services/votes.ts`, `store/option/useOptionStore.ts`, `store/vote/useVoteStore.ts`, `lib/voteAPI.ts`, `lib/roomAPI.ts`.
 
 ---
 

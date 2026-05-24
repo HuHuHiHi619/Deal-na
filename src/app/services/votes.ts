@@ -1,14 +1,16 @@
-import { supabase } from "../lib/supabase";
+import { createServerClient } from "../lib/supabase";
 
 export interface VoteProps {
   roomId: string;
   optionId: string;
   userId: string;
+  token: string;
 }
 
-export async function createVote({ roomId, optionId, userId }: VoteProps) {
+export async function createVote({ roomId, optionId, userId, token }: VoteProps) {
   try {
-    const { data, error } = await supabase
+    const client = createServerClient(token);
+    const { data, error } = await client
       .from("votes")
       .insert([
         {
@@ -23,13 +25,15 @@ export async function createVote({ roomId, optionId, userId }: VoteProps) {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error(" createVote service error:",error);
-    return false
+    console.error(" createVote service error:", error);
+    return false;
   }
 }
-export async function deleteVote({ optionId, roomId, userId }: VoteProps) {
+
+export async function deleteVote({ optionId, roomId, userId, token }: VoteProps) {
   try {
-    const { error } = await supabase
+    const client = createServerClient(token);
+    const { error } = await client
       .from("votes")
       .delete()
       .eq("room_id", roomId)
@@ -42,9 +46,9 @@ export async function deleteVote({ optionId, roomId, userId }: VoteProps) {
       return false;
     }
 
-    return true; 
+    return true;
   } catch (error) {
     console.error("deleteVote service error : ", error);
-    return false
+    return false;
   }
 }

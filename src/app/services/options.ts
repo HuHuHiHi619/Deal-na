@@ -1,19 +1,22 @@
-import { supabase } from "../lib/supabase";
+import { createServerClient } from "../lib/supabase";
 
 export interface CreateOptionProps {
   roomId: string;
   options: string[];
   userId: string;
+  token: string;
 }
 export interface DeleteOptionProps {
   roomId: string;
   optionId: string;
   userId: string;
+  token: string;
 }
 
-export async function getOptions(roomId: string) {
+export async function getOptions(roomId: string, token: string) {
   try {
-    const { data, error } = await supabase
+    const client = createServerClient(token);
+    const { data, error } = await client
       .from("options")
       .select("*")
       .eq("room_id", roomId);
@@ -28,14 +31,16 @@ export async function createOption({
   roomId,
   options,
   userId,
+  token,
 }: CreateOptionProps) {
   try {
+    const client = createServerClient(token);
     const optionsToInsert = options.map((opt) => ({
       room_id: roomId,
       title: opt,
       user_id: userId,
     }));
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("options")
       .insert(optionsToInsert)
       .single();
@@ -46,13 +51,16 @@ export async function createOption({
     console.error(error);
   }
 }
+
 export async function deleteOption({
   optionId,
   roomId,
   userId,
+  token,
 }: DeleteOptionProps) {
   try {
-    const { error } = await supabase
+    const client = createServerClient(token);
+    const { error } = await client
       .from("options")
       .delete()
       .eq("room_id", roomId)
@@ -63,7 +71,7 @@ export async function deleteOption({
     if (error) throw error;
     return true;
   } catch (error) {
-    console.error("deleteOption service error ",error);
-    return false
+    console.error("deleteOption service error ", error);
+    return false;
   }
 }
