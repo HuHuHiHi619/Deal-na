@@ -141,7 +141,7 @@ useEffect(() => {
 
 ---
 
-## Issue 5 — `createServerClient` naming hides browser-side calls [LOW]
+## ~~Issue 5 — `createServerClient` naming hides browser-side calls~~ [DONE]
 
 **File:** `src/app/lib/supabase.ts`
 
@@ -155,10 +155,10 @@ API routes (genuinely server-side). No rename needed at that point — the misus
 is eliminated by fixing the callers. If any browser-side authenticated client is
 still needed, name it `createAuthenticatedClient` and keep it clearly separate.
 
-**Files to change:**
-- `src/app/services/options.ts` — deleted or gutted after Issue 2 routes exist
-- `src/app/services/votes.ts` — deleted or gutted after Issue 2 routes exist
-- `src/app/lib/supabase.ts` — no rename needed once services are removed
+**Files deleted:**
+- `src/app/services/options.ts` — deleted (zero importers after Issue 2)
+- `src/app/services/votes.ts` — deleted (zero importers after Issue 2)
+- `src/app/lib/supabase.ts` — no rename needed; `createServerClient` is now server-only
 
 ---
 
@@ -170,7 +170,7 @@ still needed, name it `createAuthenticatedClient` and keep it clearly separate.
 | ~~2~~ | ~~Add POST/DELETE API routes for options + votes~~ | ~~Done~~ | ~~Auth perimeter incomplete~~ |
 | ~~3~~ | ~~Remove internal `getSession()` from `roomAPI.ts`~~ | ~~Done~~ | ~~Stale token 401s on refresh~~ |
 | ~~4~~ | ~~Remove redundant `getSession()` from AuthProvider~~ | ~~Done~~ | ~~Rare redirect race~~ |
-| 5 | Clean up / delete `services/options.ts` and `services/votes.ts` | ~15 min | Dead code confusion |
+| ~~5~~ | ~~Clean up / delete `services/options.ts` and `services/votes.ts`~~ | ~~Done~~ | ~~Dead code confusion~~ |
 
 Do steps 1 → 2 → 3 in a single session. Steps 4 and 5 can be a follow-up.
 
