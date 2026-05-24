@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useUiStore } from "../useUiStore";
+import { useAuth } from "../auth/useAuth";
 import { createRoomAPI, joinRoomAPI } from "../../lib/roomAPI";
 import { Option, useOptionStore } from "../option/useOptionStore";
 import { useRoomRealtimeStore } from "./useRoomRealtimeStore";
@@ -38,9 +39,8 @@ interface RoomState {
   createRoom: (
     title: string,
     options: string[],
-    userId: string
   ) => Promise<void>;
-  joinRoom: (roomId: string, userId: string) => Promise<Room | null>;  // แก้ any
+  joinRoom: (roomId: string) => Promise<Room | null>;  
   exitRoom: () => void;
 }
 
@@ -56,10 +56,12 @@ export const useRoom = create<RoomState>()(
       setError: (error: string | null) => set({ error }),
       clearError: () => set({ error: null }),
 
-      createRoom: async (title: string, options: string[], userId: string) => {
+      createRoom: async (title: string, options: string[]) => {
         set({ error: null });
         try {
-          const data = await createRoomAPI(title, options, userId);
+          const token = useAuth.getState().session?.access_token;
+          if (!token) throw new Error("Session expired. Please log in again.");
+          const data = await createRoomAPI(title, options, token);
 
           const room: Room = {
             id: data.room.id,
@@ -88,7 +90,7 @@ export const useRoom = create<RoomState>()(
       },
 
       // Join room
-      joinRoom: async (roomId: string, userId: string) => {
+      joinRoom: async (roomId: string) => {
         useUiStore.getState().setLoading("joinRoomLoading", true);
 
         const state = get();
@@ -98,7 +100,9 @@ export const useRoom = create<RoomState>()(
 
         set({ error: null, isJoin: true });
         try {
-          const data = await joinRoomAPI(roomId, userId);
+          const token = useAuth.getState().session?.access_token;
+          if (!token) throw new Error("Session expired. Please log in again.");
+          const data = await joinRoomAPI(roomId, token);
 
           if (data.error) {
             throw new Error(data.error);

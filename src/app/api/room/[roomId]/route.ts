@@ -8,14 +8,14 @@ export async function POST(
   try {
     const auth = await requireAuth(req);
     if (auth instanceof NextResponse) return auth;
-    const { supabase } = auth;
+    const {user , supabase } = auth;
 
     const { roomId } = await params;
-    const { userId } = await req.json();
+    const userId = user.id;
 
-    if (!roomId || !userId) {
+    if (!roomId) {
       return NextResponse.json(
-        { error: "Room code or user id not found" },
+        { error: "Room id not found" },
         { status: 400 }
       );
     }
