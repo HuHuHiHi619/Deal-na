@@ -6,7 +6,7 @@ import { useRoomMemberStore } from "./useRoomMemberStore";
 export const useRoomRealtimeStore = create<RealtimeStore>((set, get) => ({
   channel: null,
   subscribe: (roomId: string) : Promise<void> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const { addMember } = useRoomMemberStore.getState();
       const channel = supabase.channel(`room:${roomId}`)
       .on(
@@ -23,6 +23,9 @@ export const useRoomRealtimeStore = create<RealtimeStore>((set, get) => ({
       .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
             resolve();
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            supabase.removeChannel(channel);
+            reject(new Error(`Realtime subscription failed: ${status}`));
           }
         });
       set({ channel })

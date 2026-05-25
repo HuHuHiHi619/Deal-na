@@ -7,7 +7,7 @@ import { useVoteStore, Vote } from "./useVoteStore";
 export const useVoteRealtimeStore = create<RealtimeStore>((set, get) => ({
   channel: null,
   subscribe: (roomId: string): Promise<void> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const { addVote, deleteVote } = useVoteStore.getState();
       const channel = supabase
         .channel(`votes:${roomId}`)
@@ -38,6 +38,9 @@ export const useVoteRealtimeStore = create<RealtimeStore>((set, get) => ({
         .subscribe((status) => {
           if (status === "SUBSCRIBED") {
             resolve();
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            supabase.removeChannel(channel);
+            reject(new Error(`Realtime subscription failed: ${status}`));
           }
         });
       set({ channel });

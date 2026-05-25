@@ -14,8 +14,8 @@ export const useOptionRealtimeStore = create<RealtimeStore>(
   (set, get) => ({
     channel: null,
     subscribe: (roomId: string) : Promise<void> => {
-      return new Promise((resolve) => {
-        
+      return new Promise((resolve, reject) => {
+
         const { addOption, removeOption } = useOptionStore.getState();
         const channel = supabase
         .channel(`options:${roomId}`)
@@ -31,7 +31,7 @@ export const useOptionRealtimeStore = create<RealtimeStore>(
             addOption(payload.new);
           }
         )
-        
+
         .on(
           "postgres_changes",
           {
@@ -47,6 +47,9 @@ export const useOptionRealtimeStore = create<RealtimeStore>(
        .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
             resolve();
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            supabase.removeChannel(channel);
+            reject(new Error(`Realtime subscription failed: ${status}`));
           }
         });
         set({ channel })

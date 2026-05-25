@@ -4,6 +4,7 @@ import { useRoomRealtimeStore } from "../store/room/useRoomRealtimeStore";
 import { useVoteRealtimeStore } from "../store/vote/useVoteRealtimeStore";
 import { useRoomRealtimeReadyStore } from "../store/room/useRoomRealtimeReadyStore";
 import { useAuth } from "../store/auth/useAuth";
+import { useUiStore } from "../store/useUiStore";
 
 export function useRealtimeRoom(roomId: string | undefined) {
   const { subscribe: subscribeRoom, unsubscribe: unsubscribeRoom } =
@@ -32,19 +33,21 @@ export function useRealtimeRoom(roomId: string | undefined) {
       return;
     }
 
-    try {
-      await Promise.allSettled([
-        subscribeRoom(roomId),
-        subscribeOption(roomId),
-        subscribeVote(roomId),
-        subscribeReady(roomId, user.id),
-      ]);
-      
-      subscribedRoomIdRef.current = roomId;
-    } catch (error) {
-      console.error("❌ Subscription error:", error);
+    const results = await Promise.allSettled([
+      subscribeRoom(roomId),
+      subscribeOption(roomId),
+      subscribeVote(roomId),
+      subscribeReady(roomId, user.id),
+    ]);
+
+    const failures = results.filter(r => r.status === 'rejected');
+    if (failures.length > 0) {
+      useUiStore.getState().setError('subscriptionError', 'Failed to connect to real-time updates. Please refresh.');
       subscribedRoomIdRef.current = undefined;
+      return;
     }
+
+    subscribedRoomIdRef.current = roomId;
   },[roomId , user?.id , subscribeRoom , subscribeOption , subscribeVote , subscribeReady])
   ;
 
