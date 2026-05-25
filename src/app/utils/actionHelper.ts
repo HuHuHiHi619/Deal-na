@@ -1,9 +1,11 @@
+import type { UiKey } from "../store/useUiStore";
+
 export async function executeWithUI<T>(
-  key: string,
+  key: UiKey,
   action: () => Promise<T>,
   ui: {
-    setLoading: (key: string, value: boolean) => void;
-    setError: (key: string, message: string | null) => void;
+    setLoading: (key: UiKey, value: boolean) => void;
+    setError: (key: UiKey, message: string | null) => void;
   },
   options?: {
     onSuccess?: (data: T) => void;

@@ -1,14 +1,34 @@
 import { create } from "zustand";
 
+export type UiKey =
+  | 'loadingSession'
+  | 'popupQr'
+  | 'resultLoading'
+  | 'joinRoomLoading'
+  | 'exitRoom'
+  | 'createRoomLoading'
+  | 'fetchOptionsLoading'
+  | 'createOptionLoading'
+  | 'deleteOptionLoading'
+  | 'fetchVoteLoading'
+  | 'createVoteLoading'
+  | 'deleteVoteLoading'
+  | 'loginWithFacebook'
+  | 'loginWithGoogle'
+  | 'signOut'
+  | 'rawTitle'
+  | 'sendReady'
+  | 'subscriptionError';
+
 interface UiState {
   isPopup: boolean
   loading: Record<string, boolean>
   error: Record<string, string | null>
   setIsPopup : (value : boolean) => void
-  setLoading: (key: string, value: boolean) => void
-  setError: (key: string, message: string | null) => void
-  getError: (key: string) => string | null
-  isLoading: (key: string) => boolean
+  setLoading: (key: UiKey, value: boolean) => void
+  setError: (key: UiKey, message: string | null) => void
+  getError: (key: UiKey) => string | null
+  isLoading: (key: UiKey) => boolean
   clearAll: () => void
 }
 

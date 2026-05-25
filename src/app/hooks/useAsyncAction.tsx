@@ -1,8 +1,9 @@
 import { useUiStore } from "../store/useUiStore";
+import type { UiKey } from "../store/useUiStore";
 import { executeWithUI } from "../utils/actionHelper";
 
 export function useAsyncAction<T>(
-  actionKey: string,
+  actionKey: UiKey,
   options?: {
     onSuccess?: (data: T) => void;
     onError?: (error: unknown) => void;
