@@ -1,13 +1,13 @@
 import { useAuth } from "../store/auth/useAuth";
 import { useRoom } from "../store/room/useRoomStore";
-import { useRoomForm } from "../store/useRoomForm";
+import { useRoomFormContext } from "../room/RoomFormContext";
 import { useUiStore } from "../store/useUiStore";
 import { validateForm } from "../utils/validateForm";
 import { useAsyncAction } from "./useAsyncAction";
 
 export function useCreateRoom() {
     const { createRoom } = useRoom()
-    const { titleInput , optionsInput } = useRoomForm();
+    const { titleInput , optionsInput } = useRoomFormContext();
     const { setIsPopup, setLoading } = useUiStore();
     const { user } = useAuth()
 

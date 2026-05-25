@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { useRoomForm } from "../useRoomForm";
 import { actionWrapper } from "@/app/utils/actionWrapper";
 
 export interface Option {
@@ -18,11 +17,6 @@ export interface OptionState {
 
   // API actions
   fetchOption: (roomId: string) => Promise<void>;
-  createOption: (
-    roomId: string,
-    title: string,
-    userId: string
-  ) => Promise<void>;
   deleteOption: (optionId: string) => Promise<void>;
 }
 
@@ -51,23 +45,6 @@ export const useOptionStore = create<OptionState>((set, get) => ({
         const data = await response.json();
         set({ options: data.options });
       },
-    });
-  },
-
-  createOption: async () => {
-    const state = useRoomForm.getState();
-    const validOptions = state.optionsInput.filter((option) => option !== "");
-
-    await actionWrapper("createOptionLoading", {
-      action: async ({ roomId, token }) => {
-        const res = await fetch(`/api/option/${roomId}`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ options: validOptions }),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      },
-      onSuccess: useRoomForm.getState().clearForm,
     });
   },
 

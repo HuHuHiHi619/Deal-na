@@ -1,3 +1,4 @@
+import { RealtimeChannel } from "@supabase/supabase-js";
 import { create } from "zustand";
 import { supabase } from "@/app/lib/supabase";
 import { useRoomReadyStore } from "./useRoomReadyStore";
@@ -11,8 +12,10 @@ interface PresencePayload {
   readyAt?: string;
 }
 
-export const useRoomRealtimeReadyStore = create<RealtimeStore>((set, get) => ({
-  channel: null,
+let activeChannel: RealtimeChannel | null = null;
+
+export const useRoomRealtimeReadyStore = create<RealtimeStore>((set) => ({
+  subscribed: false,
   subscribe: (roomId: string, userId?: string): Promise<void> => {
     return new Promise((resolve, reject) => {
       const { setReady } = useRoomReadyStore.getState();
@@ -40,7 +43,8 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set, get) => ({
         .on("presence", { event: "leave" }, () => {})
         .subscribe(async (status) => {
           if (status === "SUBSCRIBED") {
-            set({ channel: ch });
+            activeChannel = ch;
+            set({ subscribed: true });
 
             // Track user in room
             if (userId) {
@@ -69,10 +73,9 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set, get) => ({
                 })
 
               } catch (err) {
-                console.warn(
-                  "⚠️ [READY-STORE] track failed (userId present) :",
-                  err
-                );
+                console.warn("⚠️ [READY-STORE] track failed (userId present) :", err);
+                reject(err instanceof Error ? err : new Error(String(err)));
+                return;
               }
             }
 
@@ -104,20 +107,18 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set, get) => ({
   },
 
   sendReady: async (userId: string) => {
-    const { channel } = get();
-
-    if (!channel) {
+    if (!activeChannel) {
       console.error("❌ Channel not found");
       return false;
     }
 
-     if (channel.state !== "joined") {
-      console.error("❌ Channel not joined, current state:", channel.state);
+    if (activeChannel.state !== "joined") {
+      console.error("❌ Channel not joined, current state:", activeChannel.state);
       throw new Error("Channel not ready");
     }
 
     try {
-      const trackResult = await channel.track({
+      const trackResult = await activeChannel.track({
         userId,
         isReady: true,
         readyAt: new Date().toISOString(),
@@ -136,20 +137,20 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set, get) => ({
   },
 
   unsubscribe: () => {
-    const { channel } = get();
-    if (channel) {
+    if (activeChannel) {
       try {
-        channel.untrack();
+        activeChannel.untrack();
       } catch (err) {
         console.warn("⚠️ untrack failed:", err);
       }
       try {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(activeChannel);
       } catch (err) {
         console.warn("⚠️ removeChannel failed:", err);
       }
+      activeChannel = null;
     }
-    set({ channel: null });
+    set({ subscribed: false });
     useRoomReadyStore.getState().clearReady();
   },
 }));

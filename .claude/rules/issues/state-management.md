@@ -3,7 +3,7 @@
 
 # State Management Issues
 
-Source: Zustand store audit (2026-05-25). **P0+P1+P2 resolved 2026-05-25**. 3 issues remain (all P3): Presence polling swallows failures, Form state in global Zustand, O(n) duplicate checks.
+Source: Zustand store audit (2026-05-25). **P0+P1+P2 resolved 2026-05-25. P3 (polling + form state) resolved 2026-05-25.** 1 issue remains (P3, deferred): O(n) duplicate checks.
 
 ---
 
@@ -153,7 +153,7 @@ Split into two wrappers — no callers change today:
 
 ## P3 — Presence Polling Swallows Failures
 
-**Status:** [ ] open
+**Status:** [x] resolved — `fix/batch3-p3-polling-formstate` (2026-05-25); catch block now calls `reject(err)` + `return` instead of silently falling through to `resolve()`
 
 **Affected files:**
 - `store/room/useRoomRealtimeReadyStore.ts:54–102` — polling catch block warns then calls `resolve()` unconditionally
@@ -174,7 +174,7 @@ Keep the polling. Fix the error path — either:
 
 ## P3 — Form State in Global Zustand
 
-**Status:** [ ] open
+**Status:** [x] resolved — `fix/batch3-p3-polling-formstate` (2026-05-25); `useRoomForm` Zustand store deleted; replaced with `RoomFormContext` (React context + `useState`) in `src/app/room/RoomFormContext.tsx`; dead `createOption` removed from `useOptionStore`
 
 **Affected files:**
 - `store/useRoomForm.ts` — `titleInput`, `optionsInput` stored globally

@@ -13,8 +13,8 @@ vi.mock("../store/room/useRoomStore", () => ({
   })),
 }));
 
-vi.mock("../store/useRoomForm", () => ({
-    useRoomForm: vi.fn(() => ({
+vi.mock("../room/RoomFormContext", () => ({
+    useRoomFormContext: vi.fn(() => ({
       titleInput: "test title",
       optionsInput: ["option 1", "option 2"],
     })),
@@ -69,8 +69,7 @@ describe("CreateRoom hook", async () => {
 
     expect(mockCreateRoom).toHaveBeenCalledWith(
       "test title",
-      ["option 1", "option 2"],
-      "user123"
+      ["option 1", "option 2"]
     );
   });
 });

@@ -5,24 +5,29 @@ import CreateRoomButton from "../component/button/CreateRoomButton";
 import OptionsPage from "../option/page";
 import ShareRoom from "../component/room/ShareRoom";
 import { useRoom } from "../store/room/useRoomStore";
-import { useRoomForm } from "../store/useRoomForm";
 import { useUiStore } from "../store/useUiStore";
+import { RoomFormProvider, useRoomFormContext } from "./RoomFormContext";
 
-
-function Rooms() {
+function RoomsContent() {
   const { currentRoom } = useRoom();
-  const { titleInput } = useRoomForm();
-  const { isPopup } = useUiStore()
+  const { titleInput } = useRoomFormContext();
+  const { isPopup } = useUiStore();
 
   return (
     <>
-     
       <TopicPage />
       {titleInput ? <OptionsPage /> : null}
       <CreateRoomButton />
-      {currentRoom && isPopup &&<ShareRoom />}
-    
+      {currentRoom && isPopup && <ShareRoom />}
     </>
+  );
+}
+
+function Rooms() {
+  return (
+    <RoomFormProvider>
+      <RoomsContent />
+    </RoomFormProvider>
   );
 }
 

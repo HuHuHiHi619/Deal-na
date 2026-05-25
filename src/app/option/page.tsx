@@ -1,12 +1,12 @@
 "use client"
 import React from "react";
-import { useRoomForm } from "../store/useRoomForm";
+import { useRoomFormContext } from "../room/RoomFormContext";
 import { PlusCircle } from "lucide-react";
 import OptionForm from "../component/room/OptionForm";
 
 function OptionsPage() {
   const { titleInput, optionsInput, setOptionsInput, addOptionInput } =
-    useRoomForm();
+    useRoomFormContext();
 
   return (
     <div className="flex  items-center justify-center p-4">
