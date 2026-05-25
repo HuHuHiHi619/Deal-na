@@ -49,12 +49,10 @@ export async function POST(req: Request) {
 
     const { error: ownerError } = await supabase
       .from("room_members")
-      .insert([{ user_id: userId, room_id: newRoom.id }])
-      .select("id")
-      .single();
+      .insert([{ user_id: userId, room_id: newRoom.id }]);
 
     if (ownerError) {
-      console.error("Failed to add room owner to members:", ownerError);
+      console.error("[create/route] room_members insert error — code:", ownerError.code, "msg:", ownerError.message);
     }
 
     const optionLists = options
@@ -69,11 +67,13 @@ export async function POST(req: Request) {
       .from("options")
       .insert(optionLists)
       .select("id , user_id");
-    if (newOptionsError)
+    if (newOptionsError) {
+      console.error("[create/route] options insert error — code:", newOptionsError.code, "msg:", newOptionsError.message);
       return NextResponse.json(
-        { error: "Failed to create options" },
+        { error: "Failed to create options",},
         { status: 500 }
       );
+    }
 
     return NextResponse.json({
       success: true,

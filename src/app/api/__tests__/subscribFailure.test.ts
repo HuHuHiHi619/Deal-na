@@ -45,9 +45,9 @@ function makeMockChannel() {
 describe('Batch 1 — Realtime subscription rejection paths', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useRoomRealtimeStore.setState({ channel: null });
-    useOptionRealtimeStore.setState({ channel: null });
-    useVoteRealtimeStore.setState({ channel: null });
+    useRoomRealtimeStore.setState({ subscribed: false });
+    useOptionRealtimeStore.setState({ subscribed: false });
+    useVoteRealtimeStore.setState({ subscribed: false });
   });
 
   describe('useRoomRealtimeStore', () => {

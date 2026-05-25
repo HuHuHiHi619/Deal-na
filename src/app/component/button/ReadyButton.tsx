@@ -3,14 +3,14 @@ import React, { useState } from "react";
 import { useRoomRealtimeReadyStore } from "@/app/store/room/useRoomRealtimeReadyStore";
 import { useAsyncAction } from "../../hooks/useAsyncAction";
 import { useVoteStats } from "@/app/hooks/useVoteStats";
-import { useVoteStore } from "@/app/store/vote/useVoteStore";
+import { useVoteStore, selectVotes } from "@/app/store/vote/useVoteStore";
 import { useAuth } from "@/app/store/auth/useAuth";
 import { Ban } from "lucide-react";
 
 const ReadyButton: React.FC<{ userId: string }> = ({ userId }) => {
-  const { sendReady , channel } = useRoomRealtimeReadyStore();
+  const { sendReady , subscribed } = useRoomRealtimeReadyStore();
   const [isReady, setIsReady] = useState(false);
-  const { votes } = useVoteStore()
+  const votes = useVoteStore(selectVotes)
   const { user } = useAuth()
   const { remainingVotes } = useVoteStats({
      votes,
@@ -31,8 +31,8 @@ const ReadyButton: React.FC<{ userId: string }> = ({ userId }) => {
   const handleReady = async () => {
 
     if (!sendReady) throw new Error("Ready function is not available");
-    if (!channel || channel.state !== 'joined') {
-      console.error("❌ Channel not ready:", channel?.state);
+    if (!subscribed) {
+      console.error("❌ Channel not ready");
       throw new Error("Connection not ready. Please wait...");
     }
    
@@ -46,8 +46,8 @@ const ReadyButton: React.FC<{ userId: string }> = ({ userId }) => {
       let retries = 0;
 
       while (retries < maxRetries) {
-        const { channel } = useRoomRealtimeReadyStore.getState();
-        if (channel && channel.state === 'joined') {
+        const { subscribed } = useRoomRealtimeReadyStore.getState();
+        if (subscribed) {
           const result = await sendReady(userId);
           if (!result)
             throw new Error("Failed to send ready. Please try again");

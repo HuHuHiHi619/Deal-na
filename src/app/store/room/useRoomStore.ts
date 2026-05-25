@@ -4,13 +4,6 @@ import { useUiStore } from "../useUiStore";
 import { useAuth } from "../auth/useAuth";
 import { createRoomAPI, joinRoomAPI } from "../../lib/roomAPI";
 import { Option, useOptionStore } from "../option/useOptionStore";
-import { useRoomRealtimeStore } from "./useRoomRealtimeStore";
-import { useOptionRealtimeStore } from "../option/useOptionRealtimeStore";
-import { useVoteRealtimeStore } from "../vote/useVoteRealtimeStore";
-import { useRoomRealtimeReadyStore } from "./useRoomRealtimeReadyStore";
-import { useVoteStore } from "../vote/useVoteStore";
-import { useRoomReadyStore } from "./useRoomReadyStore";
-import { useRoomMemberStore } from "./useRoomMemberStore";
 
 export interface Room {
   id: string;
@@ -160,25 +153,7 @@ export const useRoom = create<RoomState>()(
 
       // Clear room
       exitRoom: () => {
-        // 1. Unsubscribe realtime ทุก channel
-        const { unsubscribe: unsubRoom } = useRoomRealtimeStore.getState();
-        const { unsubscribe: unsubOption } = useOptionRealtimeStore.getState();
-        const { unsubscribe: unsubVote } = useVoteRealtimeStore.getState();
-        const { unsubscribe: unsubReady } = useRoomRealtimeReadyStore.getState();
-
-        unsubRoom();
-        unsubOption();
-        unsubVote();
-        unsubReady();
-
-        // 2. Clear room data
         set({ currentRoom: null, error: null, hasExit: true, isJoin: false });
-
-        // 3. Clear related stores 
-        useVoteStore.getState().clearVotes?.();
-        useRoomReadyStore.getState().clearReady?.();
-        useRoomMemberStore.getState().clearMembers?.();
-        useOptionStore.getState().setOptions([]);
       },
     }),
     {

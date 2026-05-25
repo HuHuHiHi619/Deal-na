@@ -1,8 +1,8 @@
 'use client';
-import { useOptionStore } from "@/app/store/option/useOptionStore";
+import { useOptionStore, selectOptions } from "@/app/store/option/useOptionStore";
 import { useRoomReadyStore } from "@/app/store/room/useRoomReadyStore";
 import { useRoom } from "@/app/store/room/useRoomStore";
-import { useVoteStore } from "@/app/store/vote/useVoteStore";
+import { useVoteStore, selectVotes } from "@/app/store/vote/useVoteStore";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 import ReadyButton from "@/app/component/button/ReadyButton";
@@ -18,9 +18,10 @@ interface VoteOptionsProps {
 }
 
 const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
-  const { options } = useOptionStore();
+  const options = useOptionStore(selectOptions);
   const { user } = useAuth();
-  const { votes, createVote, deleteVote } = useVoteStore();
+  const votes = useVoteStore(selectVotes);
+  const { createVote, deleteVote } = useVoteStore();
   const { readyMembers, totalMembers } = useRoomReadyStore();
   const { setLoading, isLoading } = useUiStore();
   const router = useRouter();

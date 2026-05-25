@@ -4,15 +4,17 @@ import { Option, useOptionStore } from "./useOptionStore";
 import { supabase } from "@/app/lib/supabase";
 
 export interface RealtimeStore {
-  channel: RealtimeChannel | null;
+  subscribed: boolean;
   subscribe: (roomId: string , userId? : string | undefined) => void;
   unsubscribe: () => void;
   sendReady?: (userId: string) => Promise<boolean>;
 }
 
+let activeChannel: RealtimeChannel | null = null;
+
 export const useOptionRealtimeStore = create<RealtimeStore>(
-  (set, get) => ({
-    channel: null,
+  (set) => ({
+    subscribed: false,
     subscribe: (roomId: string) : Promise<void> => {
       return new Promise((resolve, reject) => {
 
@@ -46,20 +48,23 @@ export const useOptionRealtimeStore = create<RealtimeStore>(
         )
        .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
+            activeChannel = channel;
+            set({ subscribed: true });
             resolve();
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
             supabase.removeChannel(channel);
             reject(new Error(`Realtime subscription failed: ${status}`));
           }
         });
-        set({ channel })
       })
       },
-      
+
       unsubscribe: () => {
-        const { channel } = get()
-        if (channel) supabase.removeChannel(channel);
-        set({ channel: null });
+        if (activeChannel) {
+          supabase.removeChannel(activeChannel);
+          activeChannel = null;
+        }
+        set({ subscribed: false });
       },
   })
 );

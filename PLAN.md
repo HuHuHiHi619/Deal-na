@@ -2,191 +2,156 @@
 
 Source: `/src/frontend.md` audit + re-audit (2026-05-24)
 
----
+## All Issues Resolved
 
-## ~~Issue 1 — `userId` from body trusted in join route~~ [DONE]
-
-**File:** `src/app/api/room/[roomId]/route.ts`
-
-**Problem:** The route validates the caller's JWT via `requireAuth` but then inserts
-`userId` from the request body — not from `auth.user.id`. An attacker with any valid
-JWT can forge their identity in `room_members`.
-
-**Fix:**
-- Remove `userId` from the parsed body.
-- Use `user.id` returned by `requireAuth` for all DB inserts.
-- Remove `userId` from the `joinRoomAPI` body in `src/app/lib/roomAPI.ts`.
-
-```ts
-// route.ts — BEFORE
-const { userId } = await req.json();
-.insert({ room_id: roomId, user_id: userId })
-
-// route.ts — AFTER
-const auth = await requireAuth(req);
-const { user, supabase } = auth;
-// userId no longer read from body
-.insert({ room_id: roomId, user_id: user.id })
-```
-
-**Files to change:**
-- `src/app/api/room/[roomId]/route.ts` — stop reading `userId` from body; use `user.id`
-- `src/app/lib/roomAPI.ts` — remove `userId` from `joinRoomAPI` body payload
-
----
-
-## ~~Issue 2 — Direct Supabase writes bypass server auth perimeter~~ [DONE]
-
-**Problem:** `createOption`, `deleteOption`, `createVote`, `deleteVote` all called
-`createServerClient(token)` directly from the browser. They skipped Next.js API routes,
-so no server-side validation, rate limiting, or application-layer enforcement existed
-for any write to `options` or `votes`.
-
-**Fix:** Added four new API route handlers; all mutations now go through the server perimeter.
-
-### ~~2a — `POST /api/option/[roomId]`~~ [DONE]
-- Added `POST` handler to existing `src/app/api/option/[roomId]/route.ts`
-- Inserts options with `user_id: user.id` from JWT — body userId never trusted
-
-### ~~2b — `DELETE /api/option/[roomId]/[optionId]`~~ [DONE]
-- New file: `src/app/api/option/[roomId]/[optionId]/route.ts`
-- Note: `[optionId]` at same level as `[roomId]` would collide in Next.js App Router — used nested route instead
-- Deletes where `id = optionId AND room_id = roomId AND user_id = user.id`
-
-### ~~2c — `POST /api/vote`~~ [DONE]
-- New file: `src/app/api/vote/route.ts`
-- Inserts `{ room_id, option_id, user_id: user.id }` from JWT
-
-### ~~2d — `DELETE /api/vote`~~ [DONE]
-- Same file as 2c
-- Deletes where `room_id = roomId AND option_id = optionId AND user_id = user.id`
-
-**Also fixed:** Two stale callers (`useCreateRoom.tsx:27`, `useRoomLifeCycle.tsx:43`) still passing `userId` to `createRoom`/`joinRoom` after those signatures were previously cleaned up.
-
-**Remaining:** `services/options.ts` and `services/votes.ts` are now dead code → Issue 5.
-
----
-
-## ~~Issue 3 — Dual token source, potential stale-token race~~ [DONE]
-
-**Files:** `src/app/lib/roomAPI.ts`, `src/app/utils/context.ts`
-
-**Problem:** `roomAPI.ts` calls `supabase.auth.getSession()` independently to get
-the token. `getRequiredContext()` reads from the Zustand store. These can diverge
-during a token refresh, causing a 401 on the next mutation.
-
-**Fix:** `roomAPI.ts` functions should accept `token` as a parameter. `actionWrapper`
-already provides the token via `getRequiredContext` — pass it through.
-
-```ts
-// roomAPI.ts — AFTER
-export async function createRoomAPI(title: string, options: string[], token: string) {
-  const res = await fetch("/api/room/create", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ title, options }),
-  });
-  ...
-}
-
-export async function joinRoomAPI(roomId: string, token: string) {
-  const res = await fetch(`/api/room/${roomId}`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: JSON.stringify({}),
-  });
-  ...
-}
-```
-
-Update callers to pass `token` from `getRequiredContext()` or `actionWrapper` context.
-
-**Files to change:**
-- `src/app/lib/roomAPI.ts` — remove internal `getSession()` calls; accept `token` param
-- `src/app/store/room/useRoomStore.ts` — pass token from store/session into `createRoomAPI`/`joinRoomAPI`
-- `src/app/hooks/useRoomLifeCycle.tsx` — verify call site still works after signature change
-
----
-
-## ~~Issue 4 — AuthProvider race: redundant `getSession()` competes with `onAuthStateChange`~~ [DONE]
-
-**File:** `src/app/Guard/AuthProvider.tsx`
-
-**Problem:** `initializeAuth` calls `getSession()` and `onAuthStateChange` both set
-session state. The `INITIAL_SESSION` event from `onAuthStateChange` fires first and
-sets `loadingSession = false`. If that fires with a null session before `getSession()`
-resolves, `AuthGuard` briefly sees `!loading && !user` and can trigger a redirect.
-
-**Fix:** Remove the `initializeAuth`/`getSession()` block entirely. Per Supabase v2
-docs, `onAuthStateChange` always fires `INITIAL_SESSION` synchronously on subscribe,
-making the separate `getSession()` call redundant.
-
-```ts
-// AuthProvider — AFTER (simplified)
-useEffect(() => {
-  const { data: { subscription } } = supabase.auth.onAuthStateChange(
-    (event, session) => {
-      setSession(session);
-      setLoading('loadingSession', false);
-    }
-  );
-  // set loading true until INITIAL_SESSION fires
-  setLoading('loadingSession', true);
-  return () => subscription.unsubscribe();
-}, [setSession, setLoading]);
-```
-
-**Files to change:**
-- `src/app/Guard/AuthProvider.tsx` — remove `initializeAuth`, keep only `onAuthStateChange`
-
----
-
-## ~~Issue 5 — `createServerClient` naming hides browser-side calls~~ [DONE]
-
-**File:** `src/app/lib/supabase.ts`
-
-**Problem:** `createServerClient` is called from `services/options.ts` and
-`services/votes.ts` which run in the browser. The name implies server-only use,
-masking the fact that these are direct client-side Supabase calls outside the
-API perimeter.
-
-**Fix:** After Issue 2 is resolved, `createServerClient` will only be called from
-API routes (genuinely server-side). No rename needed at that point — the misuse
-is eliminated by fixing the callers. If any browser-side authenticated client is
-still needed, name it `createAuthenticatedClient` and keep it clearly separate.
-
-**Files deleted:**
-- `src/app/services/options.ts` — deleted (zero importers after Issue 2)
-- `src/app/services/votes.ts` — deleted (zero importers after Issue 2)
-- `src/app/lib/supabase.ts` — no rename needed; `createServerClient` is now server-only
-
----
-
-## Execution order
-
-| Step | Issue | Effort | Risk if skipped |
+| # | What was broken | Fix applied | Risk avoided |
 |---|---|---|---|
-| ~~1~~ | ~~Fix join route body userId → `user.id`~~ | ~~Done~~ | ~~Active identity spoofing~~ |
-| ~~2~~ | ~~Add POST/DELETE API routes for options + votes~~ | ~~Done~~ | ~~Auth perimeter incomplete~~ |
-| ~~3~~ | ~~Remove internal `getSession()` from `roomAPI.ts`~~ | ~~Done~~ | ~~Stale token 401s on refresh~~ |
-| ~~4~~ | ~~Remove redundant `getSession()` from AuthProvider~~ | ~~Done~~ | ~~Rare redirect race~~ |
-| ~~5~~ | ~~Clean up / delete `services/options.ts` and `services/votes.ts`~~ | ~~Done~~ | ~~Dead code confusion~~ |
+| ~~1~~ | `userId` read from request body in join route | `user.id` from JWT enforced server-side via `requireAuth` | Identity spoofing in `room_members` |
+| ~~2~~ | `createOption/deleteOption/createVote/deleteVote` called Supabase directly from browser | Added `POST/DELETE /api/option/[roomId]` and `POST/DELETE /api/vote` routes | Auth perimeter had gaps — RLS was sole guard |
+| ~~3~~ | `roomAPI.ts` called `getSession()` internally, diverging from Zustand token | Token now passed from `actionWrapper`/`getRequiredContext` | Stale-token 401s after session refresh |
+| ~~4~~ | `AuthProvider` ran `getSession()` + `onAuthStateChange` in parallel | Removed `initializeAuth`; only `onAuthStateChange` remains | Race → `AuthGuard` sees `!loading && !user` → false redirect to login |
+| ~~5~~ | Dead service files masked browser-side Supabase calls | `services/options.ts` and `services/votes.ts` deleted | Misleading naming, leaky auth perimeter |
 
-Do steps 1 → 2 → 3 in a single session. Steps 4 and 5 can be a follow-up.
-
----
-
-## ~~Scrutinize finding — dead `userId` params on createRoom / joinRoom~~ [DONE]
-
-`useRoomStore.ts` `createRoom` and `joinRoom` still accepted `userId` as a parameter
-after the refactor but never used it. Callers were still passing `user.id` into a black
-hole. Removed from signatures, interface, and call sites.
+**Also fixed:** Dead `userId` params removed from `createRoom`/`joinRoom` signatures and all call sites.
 
 ---
 
-## What is already correct (do not regress)
+## Do Not Regress
 
-- `requireAuth` in all existing API routes — keep pattern
+- `requireAuth` pattern on all API routes
 - Open redirect fix in `useAuth.ts:loginWithProvider` — URL origin validated
-- `deleteOption` and `deleteVote` filter by `user_id` — preserve in new routes
-- `Promise.allSettled` for realtime subscriptions — unrelated, keep as-is
+- `deleteOption`/`deleteVote` filter by `user_id = user.id` server-side
+- `Promise.allSettled` for realtime subscriptions
+
+---
+
+# Zustand Store Design — Issue Backlog
+
+Source: `/src/frontend.md` audit + scrutiny (2026-05-25)
+
+## Priority Summary
+
+| Priority | Issue | Effort | Risk |
+|---|---|---|---|
+| P0 | 3 stores never reject + caller never inspects `allSettled` results | Low-Medium (two coordinated changes) | High — silent subscription failure in production |
+| P1 | Channel objects in Zustand state | Medium — `sendReady` + all `unsubscribe` access points | Medium — DevTools noise, memory leak on reset |
+| P1 | `useRoomStore` God orchestrator | Medium (move cleanup to hook) | Medium — testability blocked |
+| P2 | Untyped `useUiStore` string keys | Low (add union type) | Low — compile-time safety |
+| P2 | `actionWrapper` rigid context | Low (add second wrapper) | Low — future extensibility |
+| P3 | Post-track presence polling swallows failures silently | Low (fix error propagation, keep polling) | Low — edge case UX degradation |
+| P3 | Form state in global Zustand | Low | Minimal |
+| P3 | O(n) duplicate checks in option/vote stores | Low | Minimal at current scale |
+
+---
+
+## P0 — Subscribe Promises Never Reject + Caller Never Inspects Results
+
+**Scope:** Three postgres_changes stores only:
+- `store/room/useRoomRealtimeStore.ts`
+- `store/option/useOptionRealtimeStore.ts`
+- `store/vote/useVoteRealtimeStore.ts`
+
+> `store/room/useRoomRealtimeReadyStore.ts` already rejects on `CHANNEL_ERROR` (line 91) and `TIMED_OUT` (line 96). Do not change it.
+
+**Two-part failure:**
+
+**Part A — stores never reject.** Each returns `new Promise` with only one path: `if (status === 'SUBSCRIBED') resolve()`. On `CHANNEL_ERROR` or `TIMED_OUT`, the promise hangs forever. The channel is dead; the caller gets no signal.
+
+**Part B — caller never inspects settled results.** `useRealtimeRoom.tsx:36–43` calls `Promise.allSettled([...])` then unconditionally sets `subscribedRoomIdRef.current = roomId`. `Promise.allSettled` never throws. The `try/catch` around it (line 44) is dead code. Part A alone is useless — rejections swallowed by `allSettled` have no effect.
+
+**Fix (both steps must ship together):**
+
+Step 1 — add rejection paths to the three stores:
+```typescript
+.subscribe((status) => {
+  if (status === 'SUBSCRIBED') resolve();
+  else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+    supabase.removeChannel(channel);
+    reject(new Error(`Realtime subscription failed: ${status}`));
+  }
+});
+```
+
+Step 2 — inspect results in `hooks/useRealtimeRoom.tsx`:
+```typescript
+const results = await Promise.allSettled([
+  subscribeRoom(roomId),
+  subscribeOption(roomId),
+  subscribeVote(roomId),
+  subscribeReady(roomId, user.id),
+]);
+const failures = results.filter(r => r.status === 'rejected');
+if (failures.length > 0) {
+  // surface to UI via useUiStore
+  subscribedRoomIdRef.current = undefined;
+  return;
+}
+subscribedRoomIdRef.current = roomId;
+```
+
+---
+
+## P1 — Channel Objects in Zustand State
+
+**Files:** All four realtime stores.
+
+**Why dangerous:**
+`RealtimeChannel` is a stateful WebSocket handle — not serializable. Stored in Zustand means DevTools shows garbage, orphaned channels leak on store reset, and persistence middleware would try to JSON-serialize a live socket.
+
+**Migration is non-trivial:** Channels are *read* back from state, not just written:
+- All four `unsubscribe()` read `get().channel` to call `supabase.removeChannel`.
+- `useRoomRealtimeReadyStore.sendReady` reads `get().channel`, checks `channel.state`, calls `channel.track()`.
+
+**Fix:** Move channel handles to a module-level `Map<roomId, RealtimeChannel>` outside the store. Zustand holds `subscribed: boolean` only. `sendReady` and `unsubscribe` look up the handle by `roomId` key. Do this as one coordinated PR.
+
+---
+
+## P1 — `useRoomStore` God Orchestrator
+
+**File:** `store/room/useRoomStore.ts`
+
+**Why dangerous:** `exitRoom()` reaches into 8 external stores (4 realtime + 4 data stores) via `.getState()`. Testing `useRoomStore` in isolation requires mocking 8 modules. Optional-chaining on `clearVotes?.()`, `clearReady?.()`, `clearMembers?.()` (lines 178–180) signals uncertain API contracts; `setOptions([])` on the same store does not use optional chaining — inconsistent.
+
+**Fix:** Move the cleanup sequence to `hooks/useRoomLifeCycle.tsx` (already owns subscribe/unsubscribe). Each store's action clears only its own slice. The hook owns the sequence.
+
+---
+
+## P2 — Untyped String Keys in `useUiStore`
+
+**File:** `store/useUiStore.ts`
+
+**Why dangerous:** `setLoading("joinRoomLoading", true)` uses arbitrary strings. A typo silently creates a new key — the real flag never clears, the UI spins forever.
+
+**Fix:** Add a `UiKey` union type over all valid key strings. Callers become type-checked; typos become compile errors.
+
+---
+
+## P2 — `actionWrapper` Rigid Context
+
+**File:** `utils/actionWrapper.ts`
+
+**Why dangerous (architectural, not current production bug):** `getRequiredContext()` always requires `userId + roomId + token`. All current callers are room-scoped, so this works. Future non-room actions (e.g. user settings) would have to bypass the wrapper, forking the pattern.
+
+**Fix:** Split into `authActionWrapper` (token only) and `roomActionWrapper` (all three, current behaviour renamed). No callers change today.
+
+---
+
+## P3 — Post-Track Presence Polling Swallows Failures
+
+**File:** `store/room/useRoomRealtimeReadyStore.ts:54–69`
+
+**What it does:** Polls `ch.presenceState()` via recursive `setTimeout` (not `setInterval`) after `ch.track()` resolves, waiting for the user's own entry to appear in the distributed presence state. This is a legitimate workaround for Supabase Presence not reflecting `track()` synchronously.
+
+**Where it's weak:** If polling exhausts MAX_RETRIES, the error is caught and `console.warn`'d, then `resolve()` is called unconditionally (line 90). Track failure is silently swallowed.
+
+**Fix:** Keep the polling. Fix the error path — either propagate as rejection (hard fail) or surface via `useUiStore.setError` (soft fail with user-visible message).
+
+---
+
+## P3 — Form State in Global Zustand
+
+**File:** `store/useRoomForm.ts` — Replace with `useState` in the room page component or React context scoped to `/room` layout. Eliminates one of the 13 stores.
+
+## P3 — O(n) Duplicate Checks
+
+**Files:** `store/option/useOptionStore.ts`, `store/vote/useVoteStore.ts` — `addOption`/`addVote` use `array.some()` on every realtime event. Replace internal `options: Option[]` with `Map<id, Option>` and expose an array selector. Defer until performance is a complaint.

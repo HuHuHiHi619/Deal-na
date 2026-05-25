@@ -18,7 +18,7 @@ export interface VoteResults {
 }
 
 export interface VoteState {
-  votes: Vote[];
+  votesMap: Map<string, Vote>;
   voteResults: VoteResults[];
   setVotes: (votes: Vote[]) => void;
 
@@ -31,21 +31,29 @@ export interface VoteState {
   deleteVote: (voteId: string, optionid: string) => Promise<void>;
 }
 
+export const selectVotes = (state: VoteState) => Array.from(state.votesMap.values());
+
 export const useVoteStore = create<VoteState>((set, get) => ({
-  votes: [],
+  votesMap: new Map(),
   voteResults: [],
-  setVotes: (votes) => set({ votes }),
+
+  setVotes: (votes) => set({ votesMap: new Map(votes.map((v) => [v.id, v])) }),
 
   addVote: (vote) => {
-    const exist = get().votes.some((v) => v.id === vote.id);
-    if (!exist) {
-      set({ votes: [...get().votes, vote] });
+    if (!get().votesMap.has(vote.id)) {
+      const next = new Map(get().votesMap);
+      next.set(vote.id, vote);
+      set({ votesMap: next });
     }
   },
+
   removeVote: (voteId) => {
-    set({ votes: get().votes.filter((v) => v.id !== voteId) });
+    const next = new Map(get().votesMap);
+    next.delete(voteId);
+    set({ votesMap: next });
   },
-  clearVotes: () => set({ votes: [] }),
+
+  clearVotes: () => set({ votesMap: new Map() }),
 
   // API
   fetchVote: async () => {

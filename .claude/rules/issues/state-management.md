@@ -3,7 +3,7 @@
 
 # State Management Issues
 
-Source: Zustand store audit (2026-05-25). **P0+P1+P2 resolved 2026-05-25. P3 (polling + form state) resolved 2026-05-25.** 1 issue remains (P3, deferred): O(n) duplicate checks.
+Source: Zustand store audit (2026-05-25). **All issues resolved 2026-05-25.**
 
 ---
 
@@ -193,7 +193,7 @@ Replace with `useState` in the room page component or React context scoped to th
 
 ## P3 — O(n) Duplicate Checks
 
-**Status:** [ ] open
+**Status:** [x] resolved — `fix/batch1-realtime-subscription-errors` (2026-05-25); `optionsMap: Map<string, Option>` and `votesMap: Map<string, Vote>` replace arrays in both stores; `selectOptions`/`selectVotes` selectors exported for consumers
 
 **Affected files:**
 - `store/option/useOptionStore.ts:33–37` — `addOption` uses `array.some((opt) => opt.id === option.id)`

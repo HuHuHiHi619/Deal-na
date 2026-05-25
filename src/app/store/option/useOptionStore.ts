@@ -10,7 +10,7 @@ export interface Option {
 }
 
 export interface OptionState {
-  options: Option[];
+  optionsMap: Map<string, Option>;
   setOptions: (options: Option[]) => void;
   addOption: (option: Option) => void;
   removeOption: (optionId: string) => void;
@@ -20,18 +20,26 @@ export interface OptionState {
   deleteOption: (optionId: string) => Promise<void>;
 }
 
-export const useOptionStore = create<OptionState>((set, get) => ({
-  options: [],
+export const selectOptions = (state: OptionState) => Array.from(state.optionsMap.values());
 
-  setOptions: (options) => set({ options }),
+export const useOptionStore = create<OptionState>((set, get) => ({
+  optionsMap: new Map(),
+
+  setOptions: (options) =>
+    set({ optionsMap: new Map(options.map((o) => [o.id, o])) }),
+
   addOption: (option) => {
-    const exists = get().options.some((opt) => opt.id === option.id);
-    if (!exists) {
-      set({ options: [...get().options, option] });
+    if (!get().optionsMap.has(option.id)) {
+      const next = new Map(get().optionsMap);
+      next.set(option.id, option);
+      set({ optionsMap: next });
     }
   },
+
   removeOption: (optionId) => {
-    set({ options: [...get().options.filter((opt) => opt.id !== optionId)] });
+    const next = new Map(get().optionsMap);
+    next.delete(optionId);
+    set({ optionsMap: next });
   },
 
   // API
@@ -43,7 +51,7 @@ export const useOptionStore = create<OptionState>((set, get) => ({
         });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
-        set({ options: data.options });
+        set({ optionsMap: new Map((data.options as Option[]).map((o) => [o.id, o])) });
       },
     });
   },

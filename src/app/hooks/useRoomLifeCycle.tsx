@@ -5,6 +5,9 @@ import { useRoom } from "@/app/store/room/useRoomStore";
 import { useRealtimeRoom } from "@/app/hooks/useRealtimeRoom";
 import { usePathname } from "next/navigation";
 import { useAuth } from "../store/auth/useAuth";
+import { useVoteStore } from "../store/vote/useVoteStore";
+import { useRoomMemberStore } from "../store/room/useRoomMemberStore";
+import { useOptionStore } from "../store/option/useOptionStore";
 
 export function useRoomLifecycle(roomId: string) {
   const { joinRoom, currentRoom, error, clearError, exitRoom } = useRoom();
@@ -73,6 +76,9 @@ export function useRoomLifecycle(roomId: string) {
 
     exitRoom();
     unsubscribeAll();
+    useVoteStore.getState().clearVotes();
+    useRoomMemberStore.getState().clearMembers();
+    useOptionStore.getState().setOptions([]);
   }, [pathname, isJoined, exitRoom, unsubscribeAll, roomId]);
 
   return {
