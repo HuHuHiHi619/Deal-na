@@ -5,12 +5,13 @@ import { useAsyncAction } from "../../hooks/useAsyncAction";
 import { useVoteStats } from "@/app/hooks/useVoteStats";
 import { useVoteStore, selectVotes } from "@/app/store/vote/useVoteStore";
 import { useAuth } from "@/app/store/auth/useAuth";
+import { useShallow } from "zustand/shallow";
 import { Ban } from "lucide-react";
 
 const ReadyButton: React.FC<{ userId: string }> = ({ userId }) => {
   const { sendReady , subscribed } = useRoomRealtimeReadyStore();
   const [isReady, setIsReady] = useState(false);
-  const votes = useVoteStore(selectVotes)
+  const votes = useVoteStore(useShallow(selectVotes))
   const { user } = useAuth()
   const { remainingVotes } = useVoteStats({
      votes,

@@ -3,6 +3,7 @@ import { useOptionStore, selectOptions } from "@/app/store/option/useOptionStore
 import { useRoomReadyStore } from "@/app/store/room/useRoomReadyStore";
 import { useRoom } from "@/app/store/room/useRoomStore";
 import { useVoteStore, selectVotes } from "@/app/store/vote/useVoteStore";
+import { useShallow } from "zustand/shallow";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 import ReadyButton from "@/app/component/button/ReadyButton";
@@ -18,9 +19,9 @@ interface VoteOptionsProps {
 }
 
 const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
-  const options = useOptionStore(selectOptions);
+  const options = useOptionStore(useShallow(selectOptions));
   const { user } = useAuth();
-  const votes = useVoteStore(selectVotes);
+  const votes = useVoteStore(useShallow(selectVotes));
   const { createVote, deleteVote } = useVoteStore();
   const { readyMembers, totalMembers } = useRoomReadyStore();
   const { setLoading, isLoading } = useUiStore();
