@@ -8,11 +8,12 @@ import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 import ReadyButton from "@/app/component/button/ReadyButton";
 import VoteOptionItem from "@/app/component/vote/VoteOptionItems";
+import ReadinessSlots from "@/app/component/room/ReadinessSlots";
 import { useVoteStats } from "@/app/hooks/useVoteStats";
 import { useUiStore } from "@/app/store/useUiStore";
 import LoadingPage from "@/app/component/LoadingPage";
 import { useAuth } from "@/app/store/auth/useAuth";
-import { Vote } from "lucide-react";
+import { Vote, LockKeyhole } from "lucide-react";
 
 interface VoteOptionsProps {
   handleDeleteOption: (optionId: string) => void;
@@ -23,7 +24,7 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
   const { user } = useAuth();
   const votes = useVoteStore(useShallow(selectVotes));
   const { createVote, deleteVote } = useVoteStore();
-  const { readyMembers, totalMembers } = useRoomReadyStore();
+  const { readyMembers, totalMembers, memberNames } = useRoomReadyStore();
   const { setLoading, isLoading } = useUiStore();
   const router = useRouter();
 
@@ -50,6 +51,30 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
 
   if (isLoading("resultLoading")) {
     return <LoadingPage title="Loading..." subtitle="please waiting for result" />;
+  }
+
+  const isMyReady = readyMembers.includes(user.id);
+
+  if (isMyReady) {
+    return (
+      <div className="flex flex-col items-center py-12 px-4 animate-in fade-in duration-500">
+        <div className="text-center mb-10">
+          <div className="flex justify-center mb-3">
+            <LockKeyhole size={48} className="text-emerald-500" />
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-700">You&apos;re locked in</h2>
+          <p className="text-gray-400 text-sm mt-1">Waiting for everyone to ready up...</p>
+        </div>
+
+        <div className="w-full max-w-sm">
+          <div className="flex justify-between text-xs text-gray-400 mb-3 px-1">
+            <span>Readiness</span>
+            <span>{readyMembers.length} / {totalMembers}</span>
+          </div>
+          <ReadinessSlots readyMembers={readyMembers} memberNames={memberNames} />
+        </div>
+      </div>
+    );
   }
 
   return (
