@@ -33,11 +33,13 @@ export function useRealtimeRoom(roomId: string | undefined) {
       return;
     }
 
+    const name = user.user_metadata?.name ?? user.user_metadata?.full_name ?? user.email ?? undefined;
+
     const results = await Promise.allSettled([
       subscribeRoom(roomId),
       subscribeOption(roomId),
       subscribeVote(roomId),
-      subscribeReady(roomId, user.id),
+      subscribeReady(roomId, user.id, name),
     ]);
 
     const failures = results.filter(r => r.status === 'rejected');

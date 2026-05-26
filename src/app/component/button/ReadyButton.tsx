@@ -49,7 +49,8 @@ const ReadyButton: React.FC<{ userId: string }> = ({ userId }) => {
       while (retries < maxRetries) {
         const { subscribed } = useRoomRealtimeReadyStore.getState();
         if (subscribed) {
-          const result = await sendReady(userId);
+          const name = user?.user_metadata?.name ?? user?.user_metadata?.full_name ?? user?.email ?? undefined;
+          const result = await sendReady(userId, name);
           if (!result)
             throw new Error("Failed to send ready. Please try again");
           return result;

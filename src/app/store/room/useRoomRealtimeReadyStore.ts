@@ -7,6 +7,7 @@ import { RealtimeStore } from "../option/useOptionRealtimeStore";
 
 interface PresencePayload {
   userId: string;
+  name?: string;
   isReady: boolean;
   joinedAt?: string;
   readyAt?: string;
@@ -16,7 +17,7 @@ let activeChannel: RealtimeChannel | null = null;
 
 export const useRoomRealtimeReadyStore = create<RealtimeStore>((set) => ({
   subscribed: false,
-  subscribe: (roomId: string, userId?: string): Promise<void> => {
+  subscribe: (roomId: string, userId?: string, name?: string): Promise<void> => {
     return new Promise((resolve, reject) => {
       const { setReady } = useRoomReadyStore.getState();
 
@@ -38,6 +39,13 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set) => ({
             (key) => state[key]?.[0]?.isReady === true
           );
           setReady(readyUsers);
+
+          const names = new Map<string, string>();
+          for (const key of allUsers) {
+            const n = state[key]?.[0]?.name;
+            if (n) names.set(key, n);
+          }
+          useRoomReadyStore.getState().setMemberNames(names);
         })
         .on("presence", { event: "join" }, () => {})
         .on("presence", { event: "leave" }, () => {})
@@ -51,6 +59,7 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set) => ({
               try {
                 await ch.track({
                   userId,
+                  name,
                   isReady: false,
                   joinedAt: new Date().toISOString(),
                 });
@@ -106,7 +115,7 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set) => ({
     });
   },
 
-  sendReady: async (userId: string) => {
+  sendReady: async (userId: string, name?: string) => {
     if (!activeChannel) {
       console.error("❌ Channel not found");
       return false;
@@ -120,6 +129,7 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set) => ({
     try {
       const trackResult = await activeChannel.track({
         userId,
+        name,
         isReady: true,
         readyAt: new Date().toISOString(),
       });
