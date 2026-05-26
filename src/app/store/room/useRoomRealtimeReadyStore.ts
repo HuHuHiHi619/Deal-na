@@ -4,6 +4,10 @@ import { supabase } from "@/app/lib/supabase";
 import { useRoomReadyStore } from "./useRoomReadyStore";
 import { RealtimeStore } from "../option/useOptionRealtimeStore";
 
+interface ReadyRealtimeStore extends RealtimeStore {
+  subscribe: (roomId: string, userId?: string, name?: string) => void;
+  sendReady: (userId: string, name?: string) => Promise<boolean>;
+}
 
 interface PresencePayload {
   userId: string;
@@ -15,7 +19,7 @@ interface PresencePayload {
 
 let activeChannel: RealtimeChannel | null = null;
 
-export const useRoomRealtimeReadyStore = create<RealtimeStore>((set) => ({
+export const useRoomRealtimeReadyStore = create<ReadyRealtimeStore>((set) => ({
   subscribed: false,
   subscribe: (roomId: string, userId?: string, name?: string): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -146,19 +150,12 @@ export const useRoomRealtimeReadyStore = create<RealtimeStore>((set) => ({
     }
   },
 
-  unsubscribe: () => {
+  unsubscribe: async () => {
     if (activeChannel) {
-      try {
-        activeChannel.untrack();
-      } catch (err) {
-        console.warn("⚠️ untrack failed:", err);
-      }
-      try {
-        supabase.removeChannel(activeChannel);
-      } catch (err) {
-        console.warn("⚠️ removeChannel failed:", err);
-      }
+      const ch = activeChannel;
       activeChannel = null;
+      try { await ch.untrack(); } catch (err) { console.warn("⚠️ untrack failed:", err); }
+      try { await supabase.removeChannel(ch); } catch (err) { console.warn("⚠️ removeChannel failed:", err); }
     }
     set({ subscribed: false });
     useRoomReadyStore.getState().clearReady();

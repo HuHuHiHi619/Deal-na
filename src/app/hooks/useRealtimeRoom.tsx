@@ -62,8 +62,6 @@ export function useRealtimeRoom(roomId: string | undefined) {
         unsubscribeReady(),
       ]);
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
       subscribedRoomIdRef.current = undefined;
     } catch (error) {
       console.error("Unsubscribe error:", error);

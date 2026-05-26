@@ -5,8 +5,8 @@ import { supabase } from "@/app/lib/supabase";
 
 export interface RealtimeStore {
   subscribed: boolean;
-  subscribe: (roomId: string, userId?: string, name?: string) => void;
-  unsubscribe: () => void;
+  subscribe: (roomId: string) => void;
+  unsubscribe: () => Promise<void>;
   sendReady?: (userId: string, name?: string) => Promise<boolean>;
 }
 
@@ -59,10 +59,11 @@ export const useOptionRealtimeStore = create<RealtimeStore>(
       })
       },
 
-      unsubscribe: () => {
+      unsubscribe: async () => {
         if (activeChannel) {
-          supabase.removeChannel(activeChannel);
+          const ch = activeChannel;
           activeChannel = null;
+          await supabase.removeChannel(ch);
         }
         set({ subscribed: false });
       },

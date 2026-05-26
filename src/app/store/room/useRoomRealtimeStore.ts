@@ -35,10 +35,11 @@ export const useRoomRealtimeStore = create<RealtimeStore>((set) => ({
         });
     })
     },
-    unsubscribe: () => {
+    unsubscribe: async () => {
     if (activeChannel) {
-      supabase.removeChannel(activeChannel);
+      const ch = activeChannel;
       activeChannel = null;
+      await supabase.removeChannel(ch);
     }
     set({ subscribed: false });
   },

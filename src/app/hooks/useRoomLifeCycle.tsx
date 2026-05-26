@@ -75,10 +75,10 @@ export function useRoomLifecycle(roomId: string) {
     lifecycle.isJoiningInternal = false;
 
     exitRoom();
-    unsubscribeAll();
     useVoteStore.getState().clearVotes();
     useRoomMemberStore.getState().clearMembers();
     useOptionStore.getState().setOptions([]);
+    unsubscribeAll();
   }, [pathname, isJoined, exitRoom, unsubscribeAll, roomId]);
 
   return {
