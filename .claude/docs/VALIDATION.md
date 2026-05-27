@@ -84,31 +84,15 @@ Effect cleanup synchronously calls `clearMembers`, `setOptions([])`, `clearVotes
 
 ## 2. Remaining Architectural Risks
 
-### RISK-1 — No reconnect recovery (medium severity) ⏳ Stage 2
+### RISK-1 — No reconnect recovery ✅ Stage 2
 
-When the WebSocket disconnects and Supabase auto-reconnects, the channel re-enters `SUBSCRIBED`. The provider does not detect this transition and does not re-run Stage 4 initial fetches.
-
-**Consequence:** Any events emitted during the disconnection window are permanently lost. State is frozen at the last-known snapshot. It self-corrects only when the next event arrives and triggers a versionedFetch call. For a 30-second outage on an active room, member count, vote counts, and ready state can all be stale.
-
-**Scope:** Not fixed in the restructure. Accepted for the initial implementation.
-
-**Future fix shape:** Listen for `SUBSCRIBED` status in the subscribe callback after the initial subscription resolves; on subsequent `SUBSCRIBED` events, re-run the initial fetches from Stage 4.
+Resolved in `fix/batch1-realtime-subscription-errors` Stage 2. The subscribe callback now distinguishes the initial `SUBSCRIBED` from subsequent ones via `firstSubscribe` flag. On reconnect, `reconnectBootstrap()` re-fetches all slices (room, members, options, votes) without calling `joinRoomAPI`, then re-tracks presence. `hasJoined` gate prevents double-bootstrap before the initial bootstrap completes.
 
 ---
 
-### RISK-2 — Debounce timer outlives effect cleanup (low severity, subtle) ⚠️ Open
+### RISK-2 — Debounce timer outlives effect cleanup ✅ Stage 2
 
-`debouncedFetchVotes` is constructed inside the `useEffect` closure with `debounce(() => fetchVotes(roomId), 50)`. When cleanup fires (`aborted = true`), the debounce timer may still be pending in the JavaScript task queue.
-
-When the timer fires after cleanup:
-1. It calls `fetchVotes(roomId)` where `roomId` is the old room.
-2. `fetchVotes` is a module-level versionedFetch. It increments the module-level `version` counter.
-3. The new session's initial `fetchVotes` call (in the new effect's Stage 4) had its own `myVersion = N`. The orphaned timer fires with `myVersion = N+1`.
-4. If the orphaned timer's network call resolves, it passes the version check (`N+1 === N+1`) and writes old-room vote data into the new session's `voteResults`.
-
-**Consequence:** new room session transiently shows vote data from the previous room until the next event triggers a fresh `fetchVotes`.
-
-**Mitigation shape:** cancel the debounce in cleanup (`debouncedFetchVotes.cancel()`), or move debounce construction to module level and cancel it in the cleanup return.
+Resolved in Stage 2. `makeDebounce` now returns `T & { cancel: () => void }`. Effect cleanup calls `debouncedFetchVotes.cancel()` before `supabase.removeChannel(ch)`, dropping any pending timer before the version counter can be incremented by the orphaned closure.
 
 ---
 
@@ -122,13 +106,9 @@ When the timer fires after cleanup:
 
 ---
 
-### RISK-4 — `startedAt` lobby navigation lost during reconnect (medium severity) ⏳ Stage 2
+### RISK-4 — `startedAt` lobby navigation lost during reconnect ✅ Stage 2
 
-If a guest is disconnected at the moment the host triggers start, the `room` UPDATE event is delivered during the outage window and is permanently lost (RISK-1 applied to the start flow).
-
-**Consequence:** the guest remains on the lobby page with `startedAt=null`. They will not automatically navigate to the vote page. Manual refresh is required.
-
-**Scope:** a consequence of RISK-1. Resolved only when reconnect recovery is implemented.
+Resolved as a consequence of RISK-1 fix. `reconnectBootstrap()` calls `fetchRoom(roomId, token)` which sets `currentRoom.startedAt` from the server. If the host started the room during the outage, the reconnect refetch delivers the non-null `startedAt`, triggering the lobby `useEffect` navigation guard on all reconnecting guests.
 
 ---
 
@@ -160,11 +140,9 @@ After `channel.track({ isReady: false })` at the end of Stage 4, the `sync` even
 
 ---
 
-### TRADEOFF-2 — No reconnect recovery
+### TRADEOFF-2 — No reconnect recovery ✅ Implemented in Stage 2
 
-The provider does not re-run Stage 4 fetches after a WebSocket reconnect. State is frozen during outages.
-
-**Why accepted:** reconnect recovery requires detecting the re-`SUBSCRIBED` status (distinguishing the initial `SUBSCRIBED` from a subsequent one), and re-running all five initial fetches without re-calling `joinRoomAPI`. This is non-trivial and is not required to fix the three concrete bugs targeted by the restructure (RC-1, RC-2/3, RC-5).
+The provider now detects re-`SUBSCRIBED` (via `firstSubscribe` flag) and calls `reconnectBootstrap()` to re-fetch all slices without re-calling `joinRoomAPI`. Presence is re-tracked using `presenceRef.current` which holds the last-sent payload (preserving `isReady=true` if the user had already readied).
 
 ---
 
@@ -242,9 +220,9 @@ In Stage 4, `joinRoomAPI` [0] and `fetchMembersAPI` [2] run in parallel. The RLS
 
 ---
 
-### ASSUMPTION-5 — Debounce `cancel()` is called during effect cleanup
+### ASSUMPTION-5 — Debounce `cancel()` is called during effect cleanup ✅ Confirmed
 
-RISK-2 identifies that the debounce timer can outlive effect cleanup and write stale data. The resolution requires calling `debouncedFetchVotes.cancel()` in the cleanup function. This is listed as a known risk and a future fix but is **not confirmed to be in the implementation spec**. It is assumed that `debouncedFetchVotes` is either cancelled in cleanup or constructed at module level — this has not been finalised.
+`makeDebounce` returns `T & { cancel: () => void }` and cleanup calls `debouncedFetchVotes.cancel()`. RISK-2 is closed.
 
 ---
 
@@ -274,19 +252,17 @@ Every `room_members` INSERT or DELETE triggers `fetchMembers`, which fetches the
 
 ---
 
-### EC-4 — State is frozen for the duration of any WebSocket outage
+### EC-4 — State is frozen for the duration of any WebSocket outage ✅ Resolved (Stage 2)
 
-During a network interruption, the Supabase WebSocket is disconnected. No events are received. All slice stores remain at their last-known state. Supabase auto-reconnects, but the provider does not re-run initial fetches on reconnect (RISK-1).
+On reconnect, `reconnectBootstrap()` re-fetches all slices from the server, recovering any state that changed during the outage window. State is no longer permanently frozen after a reconnect.
 
-**Scope:** state self-corrects after the next event arrives post-reconnect. For a room where no further events are emitted (e.g. all votes are already cast), state may remain stale for the remainder of the session without a refresh.
+**Residual:** events emitted during the outage that were not reflected in the server-side DB state at reconnect time are still missed. In practice this is not possible — all state changes are DB-mediated and the bootstrap fetches the authoritative DB snapshot.
 
 ---
 
-### EC-5 — `startedAt` navigation is delivery-dependent for guests
+### EC-5 — `startedAt` navigation is delivery-dependent for guests ✅ Resolved (Stage 2)
 
-Guests navigate from lobby to the vote page when `currentRoom?.startedAt` becomes non-null. This change arrives via the `room` UPDATE realtime event → `fetchRoom` → `setCurrentRoom`. If the event is missed (outage, EC-4), the guest is not navigated and must refresh.
-
-**Scope:** a direct consequence of EC-4 applied to the start trigger. No guard exists in the current spec.
+`reconnectBootstrap()` calls `fetchRoom()` which sets `currentRoom.startedAt` from the server. If the host started the room during the outage, the reconnect refetch delivers the non-null `startedAt`, triggering lobby navigation without a manual refresh.
 
 ---
 

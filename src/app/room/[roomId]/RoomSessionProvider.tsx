@@ -72,18 +72,33 @@ async function fetchRoom(roomId: string, token: string) {
   });
 }
 
-function makeDebounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number): T {
+// cancel() needed so cleanup can drop a pending debounce timer (RISK-2)
+function makeDebounce<T extends (...args: Parameters<T>) => void>(
+  fn: T,
+  ms: number
+): T & { cancel: () => void } {
   let timer: ReturnType<typeof setTimeout>;
-  return ((...args: Parameters<T>) => {
+  const debounced = (...args: Parameters<T>) => {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), ms);
-  }) as T;
+  };
+  debounced.cancel = () => clearTimeout(timer);
+  return debounced as unknown as T & { cancel: () => void };
 }
 
 interface PresencePayload {
   userId: string;
   name?: string;
   isReady: boolean;
+}
+
+// Stored in presenceRef so reconnect can re-track with the correct isReady value.
+interface PresenceTrackPayload {
+  userId: string;
+  name?: string;
+  isReady: boolean;
+  joinedAt?: string;
+  readyAt?: string;
 }
 
 function syncPresence(ch: RealtimeChannel) {
@@ -129,15 +144,26 @@ export function RoomSessionProvider({
 
   // channelRef: used by sendReady outside the effect
   const channelRef = useRef<RealtimeChannel | null>(null);
+  // presenceRef: last-sent track payload; replayed after WebSocket reconnect
+  const presenceRef = useRef<PresenceTrackPayload | null>(null);
 
   const userId = user?.id;
 
   useEffect(() => {
     if (!userId) return;
-    const token = useAuth.getState().session?.access_token;
-    if (!token) return;
+    const rawToken = useAuth.getState().session?.access_token;
+    if (!rawToken) return;
+
+    // Narrow to string so closures (reconnectBootstrap etc.) don't see string | undefined
+    const token = rawToken;
 
     let aborted = false;
+    // true until the first SUBSCRIBED fires; subsequent SUBSCRIBED = reconnect
+    let firstSubscribe = true;
+    // prevents concurrent reconnect bootstraps if Supabase reconnects rapidly
+    let reconnecting = false;
+    // gates reconnect recovery — only active after initial bootstrap completes
+    let hasJoined = false;
 
     // Stage 2 — single channel construction; presence key bound here (INV-3)
     const debouncedFetchVotes = makeDebounce(() => fetchVotes(roomId, token), 50);
@@ -145,6 +171,31 @@ export function RoomSessionProvider({
     const ch = supabase.channel(`room:${roomId}`, {
       config: { presence: { key: userId } },
     });
+
+    // Reconnect recovery: re-fetch all authoritative slices (no joinRoomAPI —
+    // the user is already a member), then re-track presence so our entry
+    // re-appears in the channel's presence state.
+    async function reconnectBootstrap() {
+      if (reconnecting || aborted) return;
+      reconnecting = true;
+      try {
+        // versionedFetch counters auto-invalidate any fetches that were
+        // in-flight when the WebSocket dropped — last call wins.
+        await Promise.all([
+          fetchRoom(roomId, token),
+          fetchMembers(roomId, token),
+          fetchOptions(roomId, token),
+          fetchVotes(roomId, token),
+        ]);
+        // Re-track presence: Supabase clears presence state on disconnect,
+        // so every client must re-track after reconnect to restore their entry.
+        if (!aborted && presenceRef.current) {
+          ch.track(presenceRef.current);
+        }
+      } finally {
+        reconnecting = false;
+      }
+    }
 
     // All 8 handlers registered BEFORE subscribe (INV-4)
     ch
@@ -171,11 +222,18 @@ export function RoomSessionProvider({
         debouncedFetchVotes)
       .on("presence", { event: "sync" }, () => syncPresence(ch));
 
-    // Stage 3 — subscribe; rejects on CHANNEL_ERROR / TIMED_OUT (INV-5)
+    // Stage 3 — subscribe; rejects on CHANNEL_ERROR / TIMED_OUT (INV-5).
+    // Subsequent SUBSCRIBED events (WebSocket reconnect) trigger reconnect recovery.
     const subscribePromise = new Promise<void>((resolve, reject) => {
       ch.subscribe((status) => {
         if (status === "SUBSCRIBED") {
-          resolve();
+          if (firstSubscribe) {
+            firstSubscribe = false;
+            resolve();
+          } else if (!aborted && hasJoined) {
+            // Reconnect: recover authoritative state without re-joining
+            reconnectBootstrap();
+          }
         } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           supabase.removeChannel(ch);
           reject(new Error(`Realtime channel ${status}`));
@@ -205,6 +263,7 @@ export function RoomSessionProvider({
 
         channelRef.current = ch;
         setIsJoined(true);
+        hasJoined = true;  // reconnect recovery now active for this session
 
         // Presence self-track (fire-and-forget; sync event self-corrects)
         const name =
@@ -212,7 +271,10 @@ export function RoomSessionProvider({
           user?.user_metadata?.full_name ??
           user?.email ??
           undefined;
-        ch.track({ userId, name, isReady: false, joinedAt: new Date().toISOString() });
+        const joinedAt = new Date().toISOString();
+        const initialPresence: PresenceTrackPayload = { userId, name, isReady: false, joinedAt };
+        presenceRef.current = initialPresence;
+        ch.track(initialPresence);
       })
       .catch((err: Error) => {
         if (aborted) return;
@@ -224,6 +286,8 @@ export function RoomSessionProvider({
     return () => {
       aborted = true;           // guard all in-flight .then() callbacks
       channelRef.current = null;
+      presenceRef.current = null;     // drop stale presence; next session sets its own
+      debouncedFetchVotes.cancel();   // drop pending debounce timer (RISK-2)
 
       ch.untrack().catch(() => {}).finally(() => supabase.removeChannel(ch));
 
@@ -243,12 +307,17 @@ export function RoomSessionProvider({
     async (sendUserId: string, name?: string): Promise<boolean> => {
       const ch = channelRef.current;
       if (!ch || ch.state !== "joined") throw new Error("Channel not ready");
-      const result = await ch.track({
+      const payload: PresenceTrackPayload = {
         userId: sendUserId,
         name,
         isReady: true,
         readyAt: new Date().toISOString(),
-      });
+      };
+      const result = await ch.track(payload);
+      // Store the ready payload so reconnect re-tracks with isReady=true
+      if (result === "ok") {
+        presenceRef.current = payload;
+      }
       return result === "ok";
     },
     []

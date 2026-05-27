@@ -454,10 +454,35 @@ T=180 Request A resolves (slow) → myVersion(1) !== membersVersion(2) ✗
 
 ---
 
-## Reconnect Lifecycle ⏳ (Stage 2 — pending)
+## Reconnect Lifecycle ✅ (Stage 2)
 
-Supabase auto-reconnects the WebSocket after a network interruption. When the channel re-enters `SUBSCRIBED`, the provider does not automatically re-run bootstrap fetches in the current design — this is an acknowledged limitation acceptable for the initial restructure.
+**Implementation:** `RoomSessionProvider.tsx` — `firstSubscribe` flag + `reconnectBootstrap`.
 
-The `[roomId, userId]` effect dep guard prevents double-subscription: the bootstrap effect only fires when `roomId` or `userId` changes. A plain WebSocket reconnect (same room, same user) does not trigger the deps and does not re-run the bootstrap.
+Supabase auto-reconnects the WebSocket after a network interruption. When the channel re-enters `SUBSCRIBED`, the subscribe callback detects it (via `firstSubscribe = false` after initial subscription) and calls `reconnectBootstrap()`.
 
-If the reconnect window is short enough that Supabase replays any missed events (behaviour depends on Supabase plan and channel configuration), state will self-correct via the event → refetch chain. If events were missed during the outage window, state remains stale until the next event or user action triggers a fetch.
+```
+WebSocket drops
+  → Supabase auto-reconnects
+  → ch.subscribe callback fires with status = 'SUBSCRIBED'
+  → firstSubscribe is false → reconnectBootstrap() called
+
+reconnectBootstrap():
+  guard: if (reconnecting || aborted) return  ← prevents concurrent bootstraps
+  reconnecting = true
+  await Promise.all([
+    fetchRoom(roomId, token),    ← recovers startedAt for missed host-start events
+    fetchMembers(roomId, token), ← recovers any join/leave events missed during outage
+    fetchOptions(roomId, token), ← recovers any option changes
+    fetchVotes(roomId, token),   ← recovers any vote changes
+  ])
+  ch.track(presenceRef.current)  ← Supabase clears presence on disconnect; must re-track
+  reconnecting = false
+```
+
+**`hasJoined` gate:** `reconnectBootstrap` is only triggered when `hasJoined = true` (set after initial Stage 4 completes). This prevents a reconnect bootstrap from racing with the initial bootstrap if Supabase fires a second `SUBSCRIBED` before the first bootstrap finishes.
+
+**`presenceRef`:** stores the last-sent `ch.track(...)` payload. Set to `{ isReady: false, joinedAt }` after initial bootstrap. Updated to `{ isReady: true, readyAt }` when `sendReady` succeeds. Reconnect always re-tracks with the most recent payload — a user who was ready before the outage is re-tracked as ready.
+
+**`reconnecting` flag:** prevents concurrent reconnect bootstraps if Supabase reconnects rapidly (e.g. flapping network). The second reconnect SUBSCRIBED is a no-op if the first `reconnectBootstrap` is still in-flight.
+
+**versionedFetch invalidation:** the module-level version counters are incremented on each reconnect bootstrap call. Any fetches that were in-flight when the WebSocket dropped carry an older `myVersion` value — they will be discarded when they resolve (`myVersion !== version`). Only the reconnect bootstrap's fetches write to the store.
