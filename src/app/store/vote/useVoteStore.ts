@@ -1,6 +1,5 @@
 import { actionWrapper } from "@/app/utils/actionWrapper";
 import { create } from "zustand";
-import { getVoteAPI } from "@/app/lib/voteAPI";
 import { useUiStore } from "../useUiStore";
 
 export interface Vote {
@@ -27,7 +26,6 @@ export interface VoteState {
   removeVote: (voteId: string) => void;
   clearVotes: () => void;
 
-  fetchVote: () => Promise<void>;
   createVote: (optionId: string) => Promise<void>;
   deleteVote: (voteId: string, optionid: string) => Promise<void>;
 }
@@ -58,13 +56,6 @@ export const useVoteStore = create<VoteState>((set, get) => ({
   clearVotes: () => set({ votesMap: new Map(), voteResults: [] }),
 
   // API
-  fetchVote: async () => {
-    const votes = await actionWrapper("fetchVoteLoading", {
-      action: async ({ roomId, token }) => await getVoteAPI(roomId, token),
-    });
-    set({ voteResults: votes });
-  },
-
   createVote: async (optionId) => {
     const newVote = await actionWrapper("createVoteLoading", {
       action: async ({ roomId, token }) => {
@@ -81,7 +72,7 @@ export const useVoteStore = create<VoteState>((set, get) => ({
     if (newVote) {
       useUiStore.getState().setError("sendReady", null);
       get().addVote(newVote);
-      await get().fetchVote();
+      // refetch comes via debounced realtime INSERT event — no post-write fetch here
     }
   },
 
@@ -99,7 +90,7 @@ export const useVoteStore = create<VoteState>((set, get) => ({
     });
     if (success) {
       get().removeVote(voteId);
-      await get().fetchVote();
+      // refetch comes via debounced realtime DELETE event — no post-write fetch here
     }
   },
 }));

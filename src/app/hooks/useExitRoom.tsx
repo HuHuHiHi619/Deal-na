@@ -1,19 +1,16 @@
 import { useAsyncAction } from "./useAsyncAction";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useRoom } from "../store/room/useRoomStore";
-import { useRealtimeRoom } from "./useRealtimeRoom";
 
 export function useExitRoom() {
   const router = useRouter();
-  const { roomId }: { roomId: string } = useParams();
   const { exitRoom } = useRoom();
-  const { unsubscribeAll } = useRealtimeRoom(roomId);
 
-  const { execute, isLoading, error } = useAsyncAction("exitRoom" , {
-    onSuccess : () => {
+  const { execute, isLoading, error } = useAsyncAction("exitRoom", {
+    onSuccess: () => {
       router.replace("/room");
     },
-    onError : (err) => {
+    onError: (err) => {
       console.error("Exit room error:", err);
     },
   });
@@ -22,13 +19,10 @@ export function useExitRoom() {
     const confirmed = confirm("Are you sure you want to exit the room?");
     if (!confirmed) return;
     await execute(async () => {
-      unsubscribeAll();
       exitRoom();
-    })
-  }
+      // RoomSessionProvider cleanup tears down the channel on unmount
+    });
+  };
 
-  return {  handleExit, isLoading, error };
-
+  return { handleExit, isLoading, error };
 }
-
-

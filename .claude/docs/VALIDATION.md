@@ -4,7 +4,7 @@
 > what tradeoffs were explicitly accepted, what assumptions are unverified, and what
 > consistency guarantees the architecture cannot make.
 > This document is for future architectural review context only.
-> Last audited: 2026-05-27. **Stage 1 verified: all INV-1 through INV-8 structurally enforced.**
+> Last audited: 2026-05-27. **Stage 1 verified: all INV-1 through INV-8 structurally enforced. Stage 2 verified: RISK-1/2/3/4 resolved. Stage 3 verified: all direct-patch stores deleted; RC-2 and RC-3 closed by construction.**
 
 ---
 
@@ -141,6 +141,53 @@ if (members.length >= 2 && members.every((id) => readyMembers.includes(id))) {
 With the fix, C's `userId` is in `members` (written by `fetchMembers` at bootstrap, a DB call that completes long before presence converges). The `every` check sees that C is not in `readyMembers` and returns false — navigation blocked until C also readies.
 
 **Residual (EC-1, unchanged):** The readiness display counter `{readyMembers.length} / {totalMembers}` still uses presence-derived values and lags ~300ms after a new member tracks. This is cosmetic and self-corrects; EC-1 remains documented and accepted.
+
+---
+
+---
+
+## Stage 3 — Authoritative Refetch Model ✅ Verified
+
+### Direct-patch realtime stores deleted
+
+The four old realtime store files (`useRoomRealtimeStore`, `useOptionRealtimeStore`, `useVoteRealtimeStore`, `useRoomRealtimeReadyStore`) and their orchestrators (`useRealtimeRoom`, `useRoomLifeCycle`) are deleted. They were dead code after Stage 1 (no page imported them) but retained forbidden direct-patch event handlers (`addMember`, `addOption`, `removeOption`, `addVote`, `deleteVote`). Deletion removes the possibility of them being accidentally re-wired.
+
+**Verified:** `grep -r "useRoomRealtimeStore\|useOptionRealtimeStore\|useVoteRealtimeStore\|useRoomRealtimeReadyStore\|useRealtimeRoom\|useRoomLifeCycle" src/` returns no results.
+
+---
+
+### RC-2 closed by construction ✅
+
+**Previous violation:** `createVote` called `fetchVote()` after `addVote(newVote)`. `fetchVote()` updated `voteResults` only — not `votesMap` — from the server. A concurrent vote event could trigger a second `fetchVote()`, producing two racing responses; whichever resolved last wrote `voteResults`, potentially reflecting an older server state (RC-2: vote result flicker).
+
+**Fix:** `fetchVote()` removed from `useVoteStore`. `createVote` calls `addVote(newVote)` for the optimistic entry only. The debounced realtime INSERT event in `RoomSessionProvider` is the sole path to `setVotes + setVoteResults`. versionedFetch on `votesVer` ensures only the latest call writes.
+
+**Verified:** `createVote` and `deleteVote` in `useVoteStore.ts` contain no `fetchVote` call. `fetchVote` method no longer exists on `VoteState`.
+
+---
+
+### RC-3 closed by construction ✅
+
+**Previous violation:** `deleteVote` called `fetchVote()` after `removeVote(voteId)`. If two vote DELETE events fired within a short window, two `fetchVote()` calls raced; the older response could overwrite the newer `voteResults` (RC-3: stale overwrite).
+
+**Fix:** same as RC-2 — `fetchVote()` removed. The debounced 50ms handler collapses burst DELETE events to one `fetchVotes` call; versionedFetch drops stale responses.
+
+**Verified:** `deleteVote` in `useVoteStore.ts` calls only `removeVote(voteId)` after server confirmation.
+
+---
+
+### Hidden writes from STATE_OWNERSHIP_MATRIX threat analysis ✅ Eliminated
+
+All six hidden writes listed in the threat analysis are now removed:
+
+| Hidden write | Status |
+|---|---|
+| `useRoomStore.joinRoom` writes `started_at: now+24h` | Deleted Stage 1 |
+| `useRoomStore.joinRoom` calls `useOptionStore.setOptions()` | Deleted Stage 1 |
+| `room/page.tsx` calls `addMember(user.id)` in `onRoomJoined` | Deleted Stage 1 |
+| `lobby/page.tsx` calls `addMember(user.id)` in `onRoomJoined` | Deleted Stage 1 |
+| `room/page.tsx` calls `fetchOption(roomId)` in `onRoomJoined` | Deleted Stage 1 |
+| `useRoomRealtimeStore` calls `addMember` on INSERT | Store deleted Stage 3 |
 
 ---
 

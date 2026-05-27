@@ -11,17 +11,13 @@ import { AppWindow } from "lucide-react";
 import React, { useEffect } from "react";
 
 function Page() {
-  const { voteResults, fetchVote } = useVoteStore();
+  const { voteResults } = useVoteStore();
   const { currentRoom } = useRoom();
   const { setLoading } = useUiStore();
 
   useEffect(() => {
     setLoading("resultLoading", false);
   }, [setLoading]);
-
-  useEffect(() => {
-    fetchVote();
-  }, [fetchVote]);
 
   const { winners, results, totalVotes } = useVoteResult({ voteResults });
 

@@ -10,7 +10,6 @@ export type UiKey =
   | 'fetchOptionsLoading'
   | 'createOptionLoading'
   | 'deleteOptionLoading'
-  | 'fetchVoteLoading'
   | 'createVoteLoading'
   | 'deleteVoteLoading'
   | 'loginWithFacebook'
