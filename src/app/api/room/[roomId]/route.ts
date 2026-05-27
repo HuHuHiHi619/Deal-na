@@ -1,6 +1,34 @@
 import { requireAuth } from "@/app/lib/supabase";
 import { NextResponse } from "next/server";
 
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ roomId: string }> }
+) {
+  try {
+    const auth = await requireAuth(req);
+    if (auth instanceof NextResponse) return auth;
+    const { supabase } = auth;
+
+    const { roomId } = await params;
+
+    const { data: room, error } = await supabase
+      .from("room")
+      .select("id, room_code, title, status, created_at, expired_at, created_by, started_at")
+      .eq("id", roomId)
+      .single();
+
+    if (error || !room) {
+      return NextResponse.json({ error: "Room not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ room });
+  } catch (error: unknown) {
+    console.error("GET room error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ roomId: string }> }
@@ -62,7 +90,7 @@ export async function POST(
     const { data: newMember, error: newMemberError } = await supabase
       .from("room_members")
       .insert({ room_id: roomId, user_id: userId })
-      .select("id, user_id, room_id, join_at") 
+      .select("id, user_id, room_id, joined_at") 
       .single();
     if (newMemberError) throw newMemberError;
 

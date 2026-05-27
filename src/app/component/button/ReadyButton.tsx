@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from "react";
-import { useRoomRealtimeReadyStore } from "@/app/store/room/useRoomRealtimeReadyStore";
+import { useRoomSession } from "@/app/room/[roomId]/RoomSessionProvider";
 import { useAsyncAction } from "../../hooks/useAsyncAction";
 import { useVoteStats } from "@/app/hooks/useVoteStats";
 import { useVoteStore, selectVotes } from "@/app/store/vote/useVoteStore";
@@ -9,16 +9,15 @@ import { useShallow } from "zustand/shallow";
 import { Ban } from "lucide-react";
 
 const ReadyButton: React.FC<{ userId: string }> = ({ userId }) => {
-  const { sendReady , subscribed } = useRoomRealtimeReadyStore();
+  const { sendReady } = useRoomSession();
   const [isReady, setIsReady] = useState(false);
-  const votes = useVoteStore(useShallow(selectVotes))
-  const { user } = useAuth()
+  const votes = useVoteStore(useShallow(selectVotes));
+  const { user } = useAuth();
   const { remainingVotes } = useVoteStats({
-     votes,
-     userId: user?.id ?? "",
-     maxVotes: 3,
-   });
-  
+    votes,
+    userId: user?.id ?? "",
+    maxVotes: 3,
+  });
 
   const { execute, isLoading, error } = useAsyncAction("sendReady", {
     onSuccess: () => {
@@ -30,46 +29,31 @@ const ReadyButton: React.FC<{ userId: string }> = ({ userId }) => {
   });
 
   const handleReady = async () => {
+    if (!sendReady) throw new Error("Connection not ready. Please wait...");
 
-    if (!sendReady) throw new Error("Ready function is not available");
-    if (!subscribed) {
-      console.error("❌ Channel not ready");
-      throw new Error("Connection not ready. Please wait...");
-    }
-   
     await execute(async () => {
-
-    if(remainingVotes === 3) {
-     throw new Error ("You have to vote at least 1")
-    }
-
-      const maxRetries = 20;
-      let retries = 0;
-
-      while (retries < maxRetries) {
-        const { subscribed } = useRoomRealtimeReadyStore.getState();
-        if (subscribed) {
-          const name = user?.user_metadata?.name ?? user?.user_metadata?.full_name ?? user?.email ?? undefined;
-          const result = await sendReady(userId, name);
-          if (!result)
-            throw new Error("Failed to send ready. Please try again");
-          return result;
-        }
-        await new Promise((res) => setTimeout(res, 300));
-        retries++;
+      if (remainingVotes === 3) {
+        throw new Error("You have to vote at least 1");
       }
-      throw new Error("Connection not ready. Please refresh and try again.");
+      const name =
+        user?.user_metadata?.name ??
+        user?.user_metadata?.full_name ??
+        user?.email ??
+        undefined;
+      const result = await sendReady(userId, name);
+      if (!result) throw new Error("Failed to send ready. Please try again");
+      return result;
     });
   };
-  
+
   return (
     <>
-    {error && (
-    <div className="flex my-4 gap-2 items-center justify-center bg-rose-200 text-red-500 mb-4 py-2 px-4 text-sm shadow-md font-medium rounded-xl ">
-        <Ban />
-        <span>{error}</span>
-      </div>
-    )}
+      {error && (
+        <div className="flex my-4 gap-2 items-center justify-center bg-rose-200 text-red-500 mb-4 py-2 px-4 text-sm shadow-md font-medium rounded-xl">
+          <Ban />
+          <span>{error}</span>
+        </div>
+      )}
       <button
         id="ready-button"
         onClick={handleReady}

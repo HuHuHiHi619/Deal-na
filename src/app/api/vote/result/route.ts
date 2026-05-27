@@ -18,19 +18,25 @@ export async function GET (req : Request){
 
         if(!roomId) return NextResponse.json({ error : 'Room id not found' }, { status: 400 });
 
-       const { data: results, error: resultsError } = await supabase
-        .rpc('get_vote' , { room : roomId }) 
+        const [{ data: results, error: resultsError }, { data: votes, error: votesError }] =
+          await Promise.all([
+            supabase.rpc('get_vote', { room: roomId }),
+            supabase
+              .from('votes')
+              .select('id, option_id, room_id, user_id')
+              .eq('room_id', roomId),
+          ]);
 
-        if(resultsError) throw resultsError;
+        if (resultsError) throw resultsError;
+        if (votesError) throw votesError;
 
-        const formattedResult = results.map((r : VoteResults) => ({
-            optionId : r.option_id,
-            title : r.title,
-            voteCount : r.vote_count
-        }))
-   
-        if(resultsError) throw resultsError;
-        return NextResponse.json({ formattedResult });
+        const formattedResult = (results ?? []).map((r: VoteResults) => ({
+            optionId: r.option_id,
+            title: r.title,
+            voteCount: r.vote_count,
+        }));
+
+        return NextResponse.json({ formattedResult, votes: votes ?? [] });
     }catch (error: unknown) {
   console.error("Error joining room:", error);
   return NextResponse.json(

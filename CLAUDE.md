@@ -99,4 +99,20 @@ Tests use Vitest + jsdom + `@testing-library/react`. Test files sit next to the 
 ## AI Behavior Guidelines
 - **Output Economy**: Be extremely concise. Use code diffs or targeted edits instead of re-printing entire files. No conversational fluff.
 - **Security**: NEVER print actual secret values from `.env` files. Mask them as `KEY=******`.
-- **Workflow**: Read `TODO.md` to understand current progress before attempting any code changes.
+
+# Realtime Architecture Rules
+
+Before modifying realtime logic, read:
+
+- docs/realtime/INVARIANTS.md
+- docs/realtime/TARGET_RUNTIME_FLOW.md
+- docs/realtime/STATE_OWNERSHIP_MATRIX.md
+
+Never redesign realtime architecture unless explicitly requested.
+
+Implementation changes must preserve:
+- subscription ordering guarantees
+- reconnect recovery flow
+- authoritative snapshot model
+- single ownership lifecycle
+- idempotent reconciliation

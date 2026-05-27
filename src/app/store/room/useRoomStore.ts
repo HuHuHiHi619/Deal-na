@@ -3,7 +3,6 @@ import { persist } from "zustand/middleware";
 import { useUiStore } from "../useUiStore";
 import { useAuth } from "../auth/useAuth";
 import { createRoomAPI, joinRoomAPI } from "../../lib/roomAPI";
-import { Option, useOptionStore } from "../option/useOptionStore";
 
 export interface Room {
   id: string;
@@ -12,8 +11,9 @@ export interface Room {
   status: "open" | "closed";
   createdAt: string;
   expiredAt: string;
+  createdBy: string;
+  startedAt: string | null; // null until host starts — INV-7
   url?: string;
-  options?: Option[];
 }
 
 interface RoomState {
@@ -27,13 +27,15 @@ interface RoomState {
   // Actions
   setError: (error: string | null) => void;
   clearError: () => void;
+  setCurrentRoom: (room: Room) => void;
 
   // API Actions
   createRoom: (
     title: string,
     options: string[],
   ) => Promise<void>;
-  joinRoom: (roomId: string) => Promise<Room | null>;  
+  joinRoom: (roomId: string) => Promise<Room | null>;
+  startRoom: (roomId: string) => Promise<void>;
   exitRoom: () => void;
 }
 
@@ -48,6 +50,7 @@ export const useRoom = create<RoomState>()(
 
       setError: (error: string | null) => set({ error }),
       clearError: () => set({ error: null }),
+      setCurrentRoom: (room: Room) => set({ currentRoom: room }),
 
       createRoom: async (title: string, options: string[]) => {
         set({ error: null });
@@ -65,16 +68,15 @@ export const useRoom = create<RoomState>()(
             expiredAt:
               data.room.expiredAt ||
               new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            createdBy: data.room.created_by ?? "",
+            startedAt: null,
             url: data.room.url,
-            options: data.options,
           };
 
           set({
             currentRoom: room,
             rooms: [...get().rooms, room],
           });
-
-          useOptionStore.getState().setOptions(data.options || []);
         } catch (error: unknown) {
           const message = error instanceof Error ? error.message : "Failed to create room";
           set({ error: message });
@@ -124,18 +126,12 @@ export const useRoom = create<RoomState>()(
               roomData.expiredAt ||
               roomData.expired_at ||
               new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            createdBy: roomData.created_by ?? "",
+            startedAt: null,
             url: roomData.url || `/room/${roomId}`,
-            options: data.options || [],
           };
 
-          set({
-            currentRoom: room,
-            hasExit: false,
-          });
-
-          if (data.options && Array.isArray(data.options)) {
-            useOptionStore.getState().setOptions(data.options);
-          }
+          set({ currentRoom: room, hasExit: false });
 
           return room;
         } catch (error: unknown) {
@@ -149,6 +145,21 @@ export const useRoom = create<RoomState>()(
         } finally {
           useUiStore.getState().setLoading("joinRoomLoading", false);
         }
+      },
+
+      startRoom: async (roomId: string) => {
+        const cur = get().currentRoom;
+        if (!cur) return;
+        // Optimistic update so the lobby effect fires immediately
+        set({ currentRoom: { ...cur, startedAt: new Date().toISOString() } });
+        const token = useAuth.getState().session?.access_token;
+        if (!token) throw new Error("Session expired");
+        const res = await fetch(`/api/room/${roomId}/start`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        if (!res.ok) throw new Error("Failed to start room");
       },
 
       // Clear room

@@ -21,6 +21,7 @@ export interface VoteState {
   votesMap: Map<string, Vote>;
   voteResults: VoteResults[];
   setVotes: (votes: Vote[]) => void;
+  setVoteResults: (results: VoteResults[]) => void;
 
   addVote: (vote: Vote) => void;
   removeVote: (voteId: string) => void;
@@ -38,6 +39,7 @@ export const useVoteStore = create<VoteState>((set, get) => ({
   voteResults: [],
 
   setVotes: (votes) => set({ votesMap: new Map(votes.map((v) => [v.id, v])) }),
+  setVoteResults: (results) => set({ voteResults: results }),
 
   addVote: (vote) => {
     if (!get().votesMap.has(vote.id)) {
@@ -53,7 +55,7 @@ export const useVoteStore = create<VoteState>((set, get) => ({
     set({ votesMap: next });
   },
 
-  clearVotes: () => set({ votesMap: new Map() }),
+  clearVotes: () => set({ votesMap: new Map(), voteResults: [] }),
 
   // API
   fetchVote: async () => {

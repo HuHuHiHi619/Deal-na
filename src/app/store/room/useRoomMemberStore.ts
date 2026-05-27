@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 interface RoomMemberStore {
     members : string[]
+    setMembers : (members: string[]) => void
     addMember : (userId : string) => void
     removeMember : (userId : string) => void
     clearMembers : () => void
@@ -9,6 +10,7 @@ interface RoomMemberStore {
 
 export const useRoomMemberStore = create<RoomMemberStore>((set , get) => ({
     members : [],
+    setMembers : (members: string[]) => set({ members }),
     addMember : (userId: string) => {
         const { members } = get();
         if (members.includes(userId)) return;
