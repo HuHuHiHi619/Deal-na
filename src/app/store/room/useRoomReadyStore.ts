@@ -5,26 +5,18 @@ interface RoomReadyStore {
   totalMembers: number;
   memberNames: Map<string, string>;
   setReady: (members: string[]) => void;
-  addReady: (userId: string) => void;
-  setTotalMembers : (count : number) => void
+  setTotalMembers: (count: number) => void;
   setMemberNames: (names: Map<string, string>) => void;
-  clearReady : () => void
+  clearReady: () => void;
 }
 
-export const useRoomReadyStore = create<RoomReadyStore>((set, get) => ({
+export const useRoomReadyStore = create<RoomReadyStore>((set) => ({
   readyMembers: [],
-  totalMembers : 0,
+  totalMembers: 0,
   memberNames: new Map(),
 
   setReady: (members) => set({ readyMembers: members }),
-  addReady: (userId) => {
-    if (!get().readyMembers.includes(userId)) {
-      set({ readyMembers: [...get().readyMembers, userId] });
-    }
-  },
-
-  setTotalMembers : (count) => set({ totalMembers : count }),
+  setTotalMembers: (count) => set({ totalMembers: count }),
   setMemberNames: (names) => set({ memberNames: names }),
-
-  clearReady : () => set({ readyMembers : [] , totalMembers : 0 , memberNames: new Map() })
+  clearReady: () => set({ readyMembers: [], totalMembers: 0, memberNames: new Map() }),
 }));

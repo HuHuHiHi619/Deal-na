@@ -77,3 +77,27 @@ Fixed:
 Validation:
 - Duplicate events cannot corrupt state: all event handlers call versionedFetch → full-replace setter; no incremental patch path remains
 - Stale fetches cannot overwrite newer state: module-level version counters drop any response that is not the latest call
+
+---
+
+## Stage 4 — Reconciliation Safety
+Status: ✅ Completed — `fix/batch1-realtime-subscription-errors` (2026-05-27)
+
+Goals:
+- eliminate all patch-mode write paths forbidden by STATE_OWNERSHIP_MATRIX
+- verify versionedFetch correctness and stale-drop guarantees
+- verify idempotent reducer property holds for all slice setters
+- verify optimistic revert analysis
+
+Deleted (forbidden write paths):
+- `useRoomMemberStore.addMember` / `removeMember` — patch-mode methods; only `setMembers` via versionedFetch is permitted
+- `useRoomReadyStore.addReady` — patch-mode method; only `syncPresence` writes `readyMembers`
+- `useOptionStore.fetchOption` / `addOption` / `removeOption` — unversioned fetch + patch methods; `fetchOptions` in provider is the sole write path
+- `useRoomStore.joinRoom` — dead code; `RoomSessionProvider` owns join via direct `fetch` inside bootstrap; `isJoin`/`hasExit` flags removed with it
+- `joinRoomAPI` export removed from `lib/roomAPI.ts`
+- Dead `UiKey` entries `joinRoomLoading`, `fetchOptionsLoading`, `createOptionLoading` removed from `useUiStore.ts`
+
+Verified:
+- All 4 versionedFetch functions have module-level counters with pre-parse + pre-write stale checks
+- Idempotent setters: full-replace on every slice; Map dedup on `addVote`
+- Optimistic revert window is bounded and self-correcting (TRADEOFF-3)

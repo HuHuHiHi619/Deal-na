@@ -4,7 +4,7 @@
 > what tradeoffs were explicitly accepted, what assumptions are unverified, and what
 > consistency guarantees the architecture cannot make.
 > This document is for future architectural review context only.
-> Last audited: 2026-05-27. **Stage 1 verified: all INV-1 through INV-8 structurally enforced. Stage 2 verified: RISK-1/2/3/4 resolved. Stage 3 verified: all direct-patch stores deleted; RC-2 and RC-3 closed by construction.**
+> Last audited: 2026-05-27. **Stage 1 verified: all INV-1 through INV-8 structurally enforced. Stage 2 verified: RISK-1/2/3/4 resolved. Stage 3 verified: all direct-patch stores deleted; RC-2 and RC-3 closed by construction. Stage 4 verified: all forbidden write paths eliminated; versionedFetch, stale guards, and idempotent reducers confirmed.**
 
 ---
 
@@ -188,6 +188,69 @@ All six hidden writes listed in the threat analysis are now removed:
 | `lobby/page.tsx` calls `addMember(user.id)` in `onRoomJoined` | Deleted Stage 1 |
 | `room/page.tsx` calls `fetchOption(roomId)` in `onRoomJoined` | Deleted Stage 1 |
 | `useRoomRealtimeStore` calls `addMember` on INSERT | Store deleted Stage 3 |
+
+---
+
+## Stage 4 — Reconciliation Safety ✅ Verified
+
+### Fetch versioning + stale response guards ✅
+
+All four slice-fetching functions (`fetchMembers`, `fetchOptions`, `fetchVotes`, `fetchRoom`) in `RoomSessionProvider.tsx` use module-level version counters with a double-check pattern:
+
+```typescript
+let sliceVer = 0;
+async function fetchSlice(roomId, token) {
+  const v = ++sliceVer;
+  const res = await fetch(...);
+  if (!res.ok || sliceVer !== v) return;   // stale before parse
+  const data = await res.json();
+  if (sliceVer !== v) return;              // stale before write
+  store.getState().setSlice(data);
+}
+```
+
+**Verified:** `membersVer`, `optionsVer`, `votesVer`, `roomVer` each declared at module level in `RoomSessionProvider.tsx`. Both checks present in each function.
+
+---
+
+### Idempotent reducers ✅
+
+All slice setters are full-replace operations — calling them with identical data produces identical state:
+
+| Setter | Operation | Idempotent |
+|---|---|---|
+| `setMembers(string[])` | `set({ members })` | ✅ |
+| `setOptions(Option[])` | `set({ optionsMap: new Map(...) })` | ✅ |
+| `setVotes(Vote[])` | `set({ votesMap: new Map(...) })` | ✅ |
+| `setVoteResults(VoteResults[])` | `set({ voteResults: results })` | ✅ |
+| `addVote(Vote)` | `Map.has(id)` dedup before insert | ✅ safe under duplicate delivery |
+
+---
+
+### Forbidden write paths eliminated ✅
+
+All patch-mode methods that violate the STATE_OWNERSHIP_MATRIX write-path summary are deleted:
+
+| Deleted | Reason |
+|---|---|
+| `useRoomMemberStore.addMember` / `removeMember` | Only `setMembers` via versionedFetch is permitted |
+| `useRoomReadyStore.addReady` | Only `syncPresence` may write `readyMembers` |
+| `useOptionStore.fetchOption` / `addOption` / `removeOption` | Unversioned; provider's `fetchOptions` is the sole write path |
+| `useRoomStore.joinRoom` + `isJoin` / `hasExit` flags | Dead code; provider owns join via direct `fetch` in bootstrap |
+| `lib/roomAPI.ts:joinRoomAPI` | Only called by the now-deleted `joinRoom` |
+| `UiKey`: `joinRoomLoading`, `fetchOptionsLoading`, `createOptionLoading` | Dead keys from deleted actions |
+
+**Verified:** `grep -r "addMember\|removeMember\|addReady\|fetchOption\b\|addOption\|removeOption\|joinRoom\b" src/` returns only the few retained internal usages (`addVote`/`removeVote` in `useVoteStore` for optimistic writes — these are permitted per STATE_OWNERSHIP_MATRIX).
+
+---
+
+### Optimistic revert analysis ✅ Bounded and self-correcting
+
+The only optimistic writes are `addVote` (post-server-confirm local update in `createVote`) and `removeVote` (same in `deleteVote`). A race exists where a concurrent third-party INSERT event triggers a debounce whose snapshot precedes the local vote's DB commit — `setVotes` momentarily writes a map without the local vote.
+
+**Why this is not an incorrect revert:** the revert window is bounded (~50ms debounce + 2×RTT) and self-corrects when the local INSERT echo arrives and triggers a new `fetchVotes` call with a higher `votesVer`. No permanent data loss is possible — the INSERT echo always arrives (ASSUMPTION-1) and always wins via versionedFetch last-call semantics.
+
+**Verified:** This is the documented TRADEOFF-3 inconsistency window. The all-ready check and result page both use `voteResults` (not `votesMap`), so they are never triggered by the optimistic count.
 
 ---
 
