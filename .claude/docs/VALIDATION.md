@@ -96,13 +96,23 @@ Resolved in Stage 2. `makeDebounce` now returns `T & { cancel: () => void }`. Ef
 
 ---
 
-### RISK-3 — `fetchRoom` is not versioned (low severity) ⚠️ Open
+### RISK-3 — `fetchRoom` is not versioned ✅ Resolved
 
-`fetchRoom` is called from the provider's `room` UPDATE event handler. It is not wrapped in a versionedFetch. If two `room` UPDATE events fire in rapid succession (e.g. a host double-triggers start), two `fetchRoom` calls are in-flight simultaneously. The last to resolve wins — which may be the older snapshot.
+`fetchRoom` already uses the module-level `roomVer` counter with the identical double-check pattern as `membersVer`, `optionsVer`, and `votesVer`:
 
-**Consequence:** `currentRoom.startedAt` may briefly show the older value before the newer fetch resolves. In practice this is low risk because `room` UPDATE events are rare (only one expected per session for the start trigger).
+```typescript
+let roomVer = 0;
+async function fetchRoom(roomId, token) {
+  const v = ++roomVer;
+  const res = await fetch(...);
+  if (!res.ok || roomVer !== v) return;   // stale? abort before parse
+  const { room: r } = await res.json();
+  if (roomVer !== v) return;              // stale? abort before write
+  useRoom.getState().setCurrentRoom({...});
+}
+```
 
-**Fix shape:** wrap `fetchRoom` in a versionedFetch instance at the provider level.
+Two concurrent `room` UPDATE events increment `roomVer` to different values; only the latest call's response is written to the store. The VALIDATION.md entry was written before `fetchRoom` received the versioning pattern during Stage 1.
 
 ---
 
@@ -118,13 +128,19 @@ Covered under Accepted Tradeoffs below.
 
 ---
 
-### RISK-6 — Presence convergence window after `channel.track()` (low severity, known)
+### RISK-6 — Presence convergence window after `channel.track()` ✅ Resolved
 
-After `channel.track({ isReady: false })` at the end of Stage 4, the `sync` event echo takes ~300ms. During this window, `totalMembers` does not include self and `readyMembers` is also incomplete.
+Resolved in `vote/page.tsx`. The all-ready check now uses `members` from `useRoomMemberStore` (DB-backed, set by `fetchMembersAPI` during bootstrap) as the denominator instead of `totalMembers` (presence-derived, subject to ~300ms convergence lag):
 
-**Consequence:** if another client calls `sendReady` in this window, `readyMembers.length === totalMembers` may pass prematurely (e.g. 1 ready, 1 total instead of 1 ready, 2 total). This would navigate the room to the result page before everyone has had a chance to vote.
+```typescript
+if (members.length >= 2 && members.every((id) => readyMembers.includes(id))) {
+```
 
-**Mitigation:** the ~300ms window is small. The risk is highest for exactly 2-person rooms where both users join and one immediately clicks Ready. No guard is implemented in the current spec.
+**Why this closes RISK-6:** The original `totalMembers >= 2 && readyMembers.length === totalMembers` check had a gap: for N≥3-member rooms, if member C just joined and is in the 300ms convergence window, A's and B's clients see `totalMembers = 2` (C not propagated). If A and B both click Ready, `2 === 2` passes and they navigate to results before C has voted. The `>= 2` guard only protects 2-person rooms (where the sole new joiner being absent makes `totalMembers = 1`).
+
+With the fix, C's `userId` is in `members` (written by `fetchMembers` at bootstrap, a DB call that completes long before presence converges). The `every` check sees that C is not in `readyMembers` and returns false — navigation blocked until C also readies.
+
+**Residual (EC-1, unchanged):** The readiness display counter `{readyMembers.length} / {totalMembers}` still uses presence-derived values and lags ~300ms after a new member tracks. This is cosmetic and self-corrects; EC-1 remains documented and accepted.
 
 ---
 

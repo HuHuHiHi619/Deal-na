@@ -1,6 +1,7 @@
 'use client';
 import { useOptionStore, selectOptions } from "@/app/store/option/useOptionStore";
 import { useRoomReadyStore } from "@/app/store/room/useRoomReadyStore";
+import { useRoomMemberStore } from "@/app/store/room/useRoomMemberStore";
 import { useRoom } from "@/app/store/room/useRoomStore";
 import { useVoteStore, selectVotes } from "@/app/store/vote/useVoteStore";
 import { useShallow } from "zustand/shallow";
@@ -25,6 +26,7 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
   const votes = useVoteStore(useShallow(selectVotes));
   const { createVote, deleteVote } = useVoteStore();
   const { readyMembers, totalMembers, memberNames } = useRoomReadyStore();
+  const members = useRoomMemberStore((s) => s.members);
   const { setLoading, isLoading } = useUiStore();
   const router = useRouter();
 
@@ -37,7 +39,10 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
   useEffect(() => {
     const roomId = useRoom.getState().currentRoom?.id || "";
 
-    if (totalMembers >= 2 && readyMembers.length === totalMembers) {
+    // Use DB member list (authoritative) as denominator — presence totalMembers
+    // lags ~300ms after a new member tracks, which can cause premature navigation
+    // if existing members ready up during that window (RISK-6).
+    if (members.length >= 2 && members.every((id) => readyMembers.includes(id))) {
       setLoading("resultLoading", true);
 
       const timeout = setTimeout(() => {
@@ -45,7 +50,7 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
       }, 1000);
       return () => clearTimeout(timeout);
     }
-  }, [readyMembers, totalMembers , router , setLoading]);
+  }, [members, readyMembers, router, setLoading]);
 
   if (!user) return;
 
