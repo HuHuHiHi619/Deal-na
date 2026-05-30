@@ -1,331 +1,235 @@
-"use client";
-
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { RealtimeChannel } from "@supabase/supabase-js";
 import { supabase } from "@/app/lib/supabase";
-import { useAuth } from "@/app/store/auth/useAuth";
-import { useRoom } from "@/app/store/room/useRoomStore";
-import { useRoomMemberStore } from "@/app/store/room/useRoomMemberStore";
-import { useOptionStore } from "@/app/store/option/useOptionStore";
-import { useVoteStore } from "@/app/store/vote/useVoteStore";
-import { useRoomReadyStore } from "@/app/store/room/useRoomReadyStore";
-import { useUiStore } from "@/app/store/useUiStore";
+import { useQueryClient } from "@tanstack/react-query";
+import { createContext, useCallback, useEffect, useRef, useState } from "react";
 
-// ─── versionedFetch helpers ───────────────────────────────────────────────
-// Module-level version counters survive re-renders; last call wins.
-let membersVer = 0;
-async function fetchMembers(roomId: string, token: string) {
-  const v = ++membersVer;
-  const res = await fetch(`/api/room/${roomId}/members`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok || membersVer !== v) return;
-  const data: string[] = await res.json();
-  if (membersVer !== v) return;
-  useRoomMemberStore.getState().setMembers(data);
-}
-
-let optionsVer = 0;
-async function fetchOptions(roomId: string, token: string) {
-  const v = ++optionsVer;
-  const res = await fetch(`/api/option/${roomId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok || optionsVer !== v) return;
-  const { options } = await res.json();
-  if (optionsVer !== v) return;
-  useOptionStore.getState().setOptions(options ?? []);
-}
-
-let votesVer = 0;
-async function fetchVotes(roomId: string, token: string) {
-  const v = ++votesVer;
-  const res = await fetch(`/api/vote/result?roomId=${roomId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok || votesVer !== v) return;
-  const data = await res.json();
-  if (votesVer !== v) return;
-  useVoteStore.getState().setVotes(data.votes ?? []);
-  useVoteStore.getState().setVoteResults(data.formattedResult ?? []);
-}
-
-let roomVer = 0;
-async function fetchRoom(roomId: string, token: string) {
-  const v = ++roomVer;
-  const res = await fetch(`/api/room/${roomId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok || roomVer !== v) return;
-  const { room: r } = await res.json();
-  if (roomVer !== v) return;
-  useRoom.getState().setCurrentRoom({
-    id: r.id,
-    roomCode: r.room_code,
-    title: r.title,
-    status: r.status,
-    createdAt: r.created_at,
-    expiredAt: r.expired_at,
-    createdBy: r.created_by,
-    startedAt: r.started_at ?? null,  // INV-7: null until server writes
-    url: `/room/${r.id}`,
-  });
-}
-
-// cancel() needed so cleanup can drop a pending debounce timer (RISK-2)
-function makeDebounce<T extends (...args: Parameters<T>) => void>(
-  fn: T,
-  ms: number
-): T & { cancel: () => void } {
-  let timer: ReturnType<typeof setTimeout>;
-  const debounced = (...args: Parameters<T>) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), ms);
-  };
-  debounced.cancel = () => clearTimeout(timer);
-  return debounced as unknown as T & { cancel: () => void };
-}
-
-interface PresencePayload {
-  userId: string;
-  name?: string;
-  isReady: boolean;
-}
-
-// Stored in presenceRef so reconnect can re-track with the correct isReady value.
-interface PresenceTrackPayload {
-  userId: string;
-  name?: string;
-  isReady: boolean;
-  joinedAt?: string;
-  readyAt?: string;
-}
-
-function syncPresence(ch: RealtimeChannel) {
-  const state = ch.presenceState<PresencePayload>();
-  const allUsers = Object.keys(state);
-  useRoomReadyStore.getState().setTotalMembers(allUsers.length);
-  useRoomReadyStore.getState().setReady(
-    allUsers.filter((k) => state[k]?.[0]?.isReady === true)
-  );
-  useRoomReadyStore.getState().setMemberNames(
-    new Map(allUsers.map((k) => [k, state[k]?.[0]?.name ?? k]))
-  );
-}
-
-// ─── Context ──────────────────────────────────────────────────────────────
 interface RoomSessionContextValue {
   isJoined: boolean;
   error: string | null;
-  sendReady: ((userId: string, name?: string) => Promise<boolean>) | null;
+  totalMembers: number;
+  readyMembers: string[];
+  memberNames: Map<string, string>;
+  sendReady: ((name?: string) => Promise<boolean>) | null;
+  sendUnready: (() => Promise<boolean>) | null;
 }
 
-const RoomSessionContext = createContext<RoomSessionContextValue>({
-  isJoined: false,
-  error: null,
-  sendReady: null,
-});
-
-export function useRoomSession() {
-  return useContext(RoomSessionContext);
-}
-
-// ─── Provider ─────────────────────────────────────────────────────────────
-export function RoomSessionProvider({
-  roomId,
-  children,
-}: {
-  roomId: string;
+interface RoomSessionProps {
   children: React.ReactNode;
-}) {
-  const { user } = useAuth();
-  const [isJoined, setIsJoined] = useState(false);
+  roomId: string;
+  userId: string;
+  token: string;
+}
+
+interface PresenceMeta {
+  user_id: string;
+  name?: string;
+  status?: boolean;
+}
+
+export const RoomSessionContext = createContext<RoomSessionContextValue | null>(
+  null,
+);
+
+export const RoomSessionProvider = ({
+  children,
+  roomId,
+  userId,
+  token,
+}: RoomSessionProps) => {
+  const queryClient = useQueryClient();
+  const [isJoined, setIsJoined] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-
-  // channelRef: used by sendReady outside the effect
-  const channelRef = useRef<RealtimeChannel | null>(null);
-  // presenceRef: last-sent track payload; replayed after WebSocket reconnect
-  const presenceRef = useRef<PresenceTrackPayload | null>(null);
-
-  const userId = user?.id;
-
-  useEffect(() => {
-    if (!userId) return;
-    const rawToken = useAuth.getState().session?.access_token;
-    if (!rawToken) return;
-
-    // Narrow to string so closures (reconnectBootstrap etc.) don't see string | undefined
-    const token = rawToken;
-
-    let aborted = false;
-    // true until the first SUBSCRIBED fires; subsequent SUBSCRIBED = reconnect
-    let firstSubscribe = true;
-    // prevents concurrent reconnect bootstraps if Supabase reconnects rapidly
-    let reconnecting = false;
-    // gates reconnect recovery — only active after initial bootstrap completes
-    let hasJoined = false;
-
-    // Stage 2 — single channel construction; presence key bound here (INV-3)
-    const debouncedFetchVotes = makeDebounce(() => fetchVotes(roomId, token), 50);
-
-    const ch = supabase.channel(`room:${roomId}`, {
-      config: { presence: { key: userId } },
-    });
-
-    // Reconnect recovery: re-fetch all authoritative slices (no joinRoomAPI —
-    // the user is already a member), then re-track presence so our entry
-    // re-appears in the channel's presence state.
-    async function reconnectBootstrap() {
-      if (reconnecting || aborted) return;
-      reconnecting = true;
-      try {
-        // versionedFetch counters auto-invalidate any fetches that were
-        // in-flight when the WebSocket dropped — last call wins.
-        await Promise.all([
-          fetchRoom(roomId, token),
-          fetchMembers(roomId, token),
-          fetchOptions(roomId, token),
-          fetchVotes(roomId, token),
-        ]);
-        // Re-track presence: Supabase clears presence state on disconnect,
-        // so every client must re-track after reconnect to restore their entry.
-        if (!aborted && presenceRef.current) {
-          ch.track(presenceRef.current);
-        }
-      } finally {
-        reconnecting = false;
-      }
-    }
-
-    // All 8 handlers registered BEFORE subscribe (INV-4)
-    ch
-      .on("postgres_changes",
-        { event: "UPDATE", schema: "public", table: "room", filter: `id=eq.${roomId}` },
-        () => fetchRoom(roomId, token))
-      .on("postgres_changes",
-        { event: "INSERT", schema: "public", table: "room_members", filter: `room_id=eq.${roomId}` },
-        () => fetchMembers(roomId, token))
-      .on("postgres_changes",
-        { event: "DELETE", schema: "public", table: "room_members", filter: `room_id=eq.${roomId}` },
-        () => fetchMembers(roomId, token))
-      .on("postgres_changes",
-        { event: "INSERT", schema: "public", table: "options", filter: `room_id=eq.${roomId}` },
-        () => fetchOptions(roomId, token))
-      .on("postgres_changes",
-        { event: "DELETE", schema: "public", table: "options", filter: `room_id=eq.${roomId}` },
-        () => fetchOptions(roomId, token))
-      .on("postgres_changes",
-        { event: "INSERT", schema: "public", table: "votes", filter: `room_id=eq.${roomId}` },
-        debouncedFetchVotes)
-      .on("postgres_changes",
-        { event: "DELETE", schema: "public", table: "votes", filter: `room_id=eq.${roomId}` },
-        debouncedFetchVotes)
-      .on("presence", { event: "sync" }, () => syncPresence(ch));
-
-    // Stage 3 — subscribe; rejects on CHANNEL_ERROR / TIMED_OUT (INV-5).
-    // Subsequent SUBSCRIBED events (WebSocket reconnect) trigger reconnect recovery.
-    const subscribePromise = new Promise<void>((resolve, reject) => {
-      ch.subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          if (firstSubscribe) {
-            firstSubscribe = false;
-            resolve();
-          } else if (!aborted && hasJoined) {
-            // Reconnect: recover authoritative state without re-joining
-            reconnectBootstrap();
-          }
-        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          supabase.removeChannel(ch);
-          reject(new Error(`Realtime channel ${status}`));
-        }
-      });
-    });
-
-    // Stage 4 — bootstrap (runs only after SUBSCRIBED)
-    subscribePromise
-      .then(async () => {
-        if (aborted) { supabase.removeChannel(ch); return; }
-
-        await Promise.all([
-          // [0] join (idempotent — returns alreadyMember:true if already joined)
-          fetch(`/api/room/${roomId}`, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-            body: JSON.stringify({}),
-          }),
-          fetchRoom(roomId, token),       // [1] full room snapshot
-          fetchMembers(roomId, token),    // [2] member list
-          fetchOptions(roomId, token),    // [3] options
-          fetchVotes(roomId, token),      // [4] votes + results
-        ]);
-
-        if (aborted) return;
-
-        channelRef.current = ch;
-        setIsJoined(true);
-        hasJoined = true;  // reconnect recovery now active for this session
-
-        // Presence self-track (fire-and-forget; sync event self-corrects)
-        const name =
-          user?.user_metadata?.name ??
-          user?.user_metadata?.full_name ??
-          user?.email ??
-          undefined;
-        const joinedAt = new Date().toISOString();
-        const initialPresence: PresenceTrackPayload = { userId, name, isReady: false, joinedAt };
-        presenceRef.current = initialPresence;
-        ch.track(initialPresence);
-      })
-      .catch((err: Error) => {
-        if (aborted) return;
-        setError(err.message);
-        useUiStore.getState().setError("subscriptionError", err.message);
-      });
-
-    // Stage 8 — cleanup: runs on unmount OR when [roomId, userId] changes
-    return () => {
-      aborted = true;           // guard all in-flight .then() callbacks
-      channelRef.current = null;
-      presenceRef.current = null;     // drop stale presence; next session sets its own
-      debouncedFetchVotes.cancel();   // drop pending debounce timer (RISK-2)
-
-      ch.untrack().catch(() => {}).finally(() => supabase.removeChannel(ch));
-
-      // Store clear — total before next session begins (INV-8)
-      useRoomMemberStore.getState().clearMembers();
-      useOptionStore.getState().setOptions([]);
-      useVoteStore.getState().clearVotes();
-      useRoomReadyStore.getState().clearReady();
-      useRoom.getState().exitRoom();
-
-      setIsJoined(false);
-      setError(null);
-    };
-  }, [roomId, userId]); // dep guard prevents duplicate subscriptions (INV-6)
-
-  const sendReady = useCallback(
-    async (sendUserId: string, name?: string): Promise<boolean> => {
-      const ch = channelRef.current;
-      if (!ch || ch.state !== "joined") throw new Error("Channel not ready");
-      const payload: PresenceTrackPayload = {
-        userId: sendUserId,
-        name,
-        isReady: true,
-        readyAt: new Date().toISOString(),
-      };
-      const result = await ch.track(payload);
-      // Store the ready payload so reconnect re-tracks with isReady=true
-      if (result === "ok") {
-        presenceRef.current = payload;
-      }
-      return result === "ok";
-    },
-    []
+  const [totalMembers, setTotalmembers] = useState<number>(0);
+  const [readyMembers, setReadyMembers] = useState<string[]>([]);
+  const [memberNames, setMemberNames] = useState<Map<string, string>>(
+    new Map(),
   );
 
+  const channelRef = useRef<any>(null);
+
+  const invalidatesVotes = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["votes", roomId] });
+  }, [queryClient, roomId]);
+
+  const invalidatesRoomMembers = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["members", roomId] });
+  }, [queryClient, roomId]);
+  const invalidatesOptions = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["options", roomId] });
+  }, [queryClient, roomId]);
+  const invalidatesRoom = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["room", roomId] });
+  }, [queryClient, roomId]);
+
+  useEffect(() => {
+    const setupChannel = async () => {
+      try {
+        const res = await fetch(`/api/room/${roomId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) throw new Error("Failed to join room");
+
+        const channel = supabase
+          .channel(`room:${roomId}`, { config: { presence: { key: userId } } })
+          .on(
+            "presence",
+            {
+              event: "sync",
+            },
+            () => {
+              const state = channel.presenceState() as Record<
+                string,
+                PresenceMeta[]
+              >;
+              const members = Object.values(state).flat();
+
+              setTotalmembers(members.length);
+
+              const readyList: string[] = [];
+              const namesMap = new Map<string, string>();
+
+              members.forEach((meta) => {
+                namesMap.set(meta.user_id, meta.name || "anonymous");
+                if (meta.status) readyList.push(meta.user_id);
+              });
+
+              setMemberNames(namesMap);
+              setReadyMembers(readyList);
+            },
+          )
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "votes",
+              filter: `room_id=eq.${roomId}`,
+            },
+            () => invalidatesVotes(),
+          )
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "room_members",
+              filter: `room_id=eq.${roomId}`,
+            },
+            () => invalidatesRoomMembers(),
+          )
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "options",
+              filter: `room_id=eq.${roomId}`,
+            },
+            () => invalidatesOptions(),
+          )
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "room",
+              filter: `id=eq.${roomId}`,
+            },
+            () => invalidatesRoom(),
+          );
+
+        channelRef.current = channel;
+
+        channel.subscribe(async (status) => {
+          if (status === "SUBSCRIBED") {
+            try {
+              await channel.track({
+                user_id: userId,
+                name: "Player",
+                status: false,
+              });
+              setIsJoined(true);
+            } catch (err) {
+              setError(
+                err instanceof Error ? err.message : "Failed to track presence",
+              );
+            }
+          }
+        });
+      } catch (error) {
+        setError(
+          error instanceof Error ? error.message : "Failed to join room",
+        );
+      }
+    };
+    setupChannel();
+
+    return () => {
+      if (channelRef.current) {
+        channelRef.current.untrack();
+        channelRef.current.unsubscribe();
+      }
+    };
+  }, [
+    roomId,
+    userId,
+    invalidatesVotes,
+    invalidatesRoomMembers,
+    invalidatesOptions,
+    invalidatesRoom,
+  ]);
+
+  const sendReady = useCallback(
+    async (name?: string): Promise<boolean> => {
+      if (!channelRef.current) return false;
+
+      try {
+        await channelRef.current.track({
+          user_id: userId,
+          name: name || memberNames.get(userId) || "Player",
+          status: true,
+        });
+        return true;
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Failed to ready");
+        return false;
+      }
+    },
+    [userId, memberNames],
+  );
+  const sendUnready = useCallback(async (): Promise<boolean> => {
+    if (!channelRef.current) return false;
+    try {
+      await channelRef.current.track({
+        user_id: userId,
+        name: memberNames.get(userId) || "Player",
+        status: false,
+      });
+
+      return true;
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to unready");
+      return false;
+    }
+  }, [userId, memberNames]);
+
+  const contextValue: RoomSessionContextValue = {
+    isJoined,
+    error,
+    totalMembers,
+    readyMembers,
+    memberNames,
+    sendReady,
+    sendUnready,
+  };
+
   return (
-    <RoomSessionContext.Provider value={{ isJoined, error, sendReady }}>
+    <RoomSessionContext.Provider value={contextValue}>
       {children}
     </RoomSessionContext.Provider>
   );
-}
+};
