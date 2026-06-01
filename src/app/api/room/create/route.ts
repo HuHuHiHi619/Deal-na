@@ -81,7 +81,7 @@ export async function POST(req: Request) {
         id: newRoom.id,
         room_code: newRoom.room_code,
         title: newRoom.title,
-        url: `${origin}/room/${newRoom.id}`,
+        url: `${origin}/room/${newRoom.id}/lobby`,
       },
       options: newOptions,
       message: "Room created successfully",

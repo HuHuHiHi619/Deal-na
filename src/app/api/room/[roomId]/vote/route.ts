@@ -1,19 +1,25 @@
 import { requireAuth } from "@/app/lib/supabase";
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request) {
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ roomId: string }> },
+) {
   try {
     const auth = await requireAuth(req);
     if (auth instanceof NextResponse) return auth;
     const { user, supabase } = auth;
-
-    const { roomId, optionId } = await req.json();
+    const { roomId } = await params;
+    const { optionId } = await req.json();
 
     if (!roomId || !optionId)
-      return NextResponse.json({ error: 'roomId and optionId required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "roomId and optionId required" },
+        { status: 400 },
+      );
 
     const { data, error } = await supabase
-      .from('votes')
+      .from("votes")
       .insert([{ room_id: roomId, option_id: optionId, user_id: user.id }])
       .select()
       .single();
@@ -22,35 +28,41 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ vote: data });
   } catch (error: unknown) {
-    console.error("Post vote api Error", error);
+    console.error("POST vote error:", error);
     const message = error instanceof Error ? error.message : "Something went wrong";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ roomId: string }> },
+) {
   try {
     const auth = await requireAuth(req);
     if (auth instanceof NextResponse) return auth;
     const { user, supabase } = auth;
-
-    const { roomId, optionId } = await req.json();
+    const { roomId } = await params;
+    const { optionId } = await req.json();
 
     if (!roomId || !optionId)
-      return NextResponse.json({ error: 'roomId and optionId required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "roomId and optionId required" },
+        { status: 400 },
+      );
 
     const { error } = await supabase
-      .from('votes')
+      .from("votes")
       .delete()
-      .eq('room_id', roomId)
-      .eq('option_id', optionId)
-      .eq('user_id', user.id);
+      .eq("room_id", roomId)
+      .eq("option_id", optionId)
+      .eq("user_id", user.id);
 
     if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
-    console.error("Delete vote api Error", error);
+    console.error("DELETE vote error:", error);
     const message = error instanceof Error ? error.message : "Something went wrong";
     return NextResponse.json({ error: message }, { status: 500 });
   }
