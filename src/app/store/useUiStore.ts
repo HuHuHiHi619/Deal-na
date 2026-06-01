@@ -5,16 +5,10 @@ export type UiKey =
   | 'popupQr'
   | 'resultLoading'
   | 'exitRoom'
-  | 'createRoomLoading'
-  | 'deleteOptionLoading'
-  | 'createVoteLoading'
-  | 'deleteVoteLoading'
   | 'loginWithFacebook'
   | 'loginWithGoogle'
   | 'signOut'
   | 'rawTitle'
-  | 'sendReady'
-  | 'subscriptionError';
 
 interface UiState {
   isPopup: boolean
