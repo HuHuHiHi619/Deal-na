@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useState, ReactNode } from "react";
 
-interface RoomFormContextValue {
+export interface RoomFormContextValue {
   titleInput: string;
   optionsInput: string[];
   setTitle: (title: string) => void;
@@ -38,8 +38,6 @@ export function RoomFormProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useRoomFormContext(): RoomFormContextValue {
-  const ctx = useContext(RoomFormContext);
-  if (!ctx) throw new Error('useRoomFormContext must be used within RoomFormProvider');
-  return ctx;
+export function useRoomFormContext(): RoomFormContextValue | null {
+  return useContext(RoomFormContext);
 }

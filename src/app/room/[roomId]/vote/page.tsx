@@ -1,61 +1,62 @@
 'use client';
-import { useOptionStore, selectOptions } from "@/app/store/option/useOptionStore";
-import { useRoomReadyStore } from "@/app/store/room/useRoomReadyStore";
-import { useRoomMemberStore } from "@/app/store/room/useRoomMemberStore";
-import { useRoom } from "@/app/store/room/useRoomStore";
-import { useVoteStore, selectVotes } from "@/app/store/vote/useVoteStore";
-import { useShallow } from "zustand/shallow";
 import { useRouter } from "next/navigation";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import ReadyButton from "@/app/component/button/ReadyButton";
-import VoteOptionItem from "@/app/component/vote/VoteOptionItems";
+import { VoteOptionItem } from "@/app/component/vote/VoteOptionItems";
 import ReadinessSlots from "@/app/component/room/ReadinessSlots";
 import { useVoteStats } from "@/app/hooks/useVoteStats";
-import { useUiStore } from "@/app/store/useUiStore";
 import LoadingPage from "@/app/component/LoadingPage";
 import { useAuth } from "@/app/store/auth/useAuth";
 import { Vote, LockKeyhole } from "lucide-react";
+import useOptionsQuery from "@/app/hooks/query/useOptionsQuery";
+import useVoteQuery from "@/app/hooks/query/useVotesQuery";
+import useMembersQuery from "@/app/hooks/query/useMembersQuery";
+import useRoomSession from "@/app/hooks/useRoomSession";
+import useVoteMutations from "@/app/hooks/mutation/useVoteMutations";
+import type { Option } from "@/app/types";
 
 interface VoteOptionsProps {
-  handleDeleteOption: (optionId: string) => void;
+  roomId: string;
+  isJoined: boolean;
 }
 
-const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
-  const options = useOptionStore(useShallow(selectOptions));
+const VoteOptions: React.FC<VoteOptionsProps> = ({ roomId, isJoined }) => {
+  const { data: options } = useOptionsQuery(roomId, isJoined);
+  const { data: votesData } = useVoteQuery(roomId, isJoined);
+  const { data: members } = useMembersQuery(roomId, isJoined);
+  const { totalMembers, readyMembers, memberNames, sendUnready } = useRoomSession();
   const { user } = useAuth();
-  const votes = useVoteStore(useShallow(selectVotes));
-  const { createVote, deleteVote } = useVoteStore();
-  const { readyMembers, totalMembers, memberNames } = useRoomReadyStore();
-  const members = useRoomMemberStore((s) => s.members);
-  const { setLoading, isLoading } = useUiStore();
+  const { addVote, removeVote, isPending } = useVoteMutations(roomId);
   const router = useRouter();
+  const [resultLoading, setResultLoading] = useState(false);
+
+  // Reset lobby ready state when entering the vote page
+  useEffect(() => {
+    sendUnready?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { myVotes, remainingVotes } = useVoteStats({
-    votes,
+    votes: votesData?.votes,
     userId: user?.id ?? "",
     maxVotes: 3,
   });
 
+  // Use DB member list as denominator — presence totalMembers lags ~300ms (RISK-6)
   useEffect(() => {
-    const roomId = useRoom.getState().currentRoom?.id || "";
-
-    // Use DB member list (authoritative) as denominator — presence totalMembers
-    // lags ~300ms after a new member tracks, which can cause premature navigation
-    // if existing members ready up during that window (RISK-6).
-    if (members.length >= 2 && members.every((id) => readyMembers.includes(id))) {
-      setLoading("resultLoading", true);
-
+    if (members && members.length >= 2 && (members as string[]).every((id) => readyMembers.includes(id))) {
+      setResultLoading(true);
       const timeout = setTimeout(() => {
         router.push(`/room/${roomId}/result`);
       }, 1000);
       return () => clearTimeout(timeout);
     }
-  }, [members, readyMembers, router, setLoading]);
+  }, [members, readyMembers, router, roomId]);
 
-  if (!user) return;
+  if (!user) return null;
 
-  if (isLoading("resultLoading")) {
-    return <LoadingPage title="Loading..." subtitle="please waiting for result" />;
+  if (resultLoading) {
+    return <LoadingPage title="All votes locked in!" subtitle="Calculating results..." />;
   }
 
   const isMyReady = readyMembers.includes(user.id);
@@ -68,13 +69,13 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
             <LockKeyhole size={48} className="text-emerald-500" />
           </div>
           <h2 className="text-2xl font-semibold text-gray-700">You&apos;re locked in</h2>
-          <p className="text-gray-400 text-sm mt-1">Waiting for everyone to ready up...</p>
+          <p className="text-gray-400 text-sm mt-1">Waiting for everyone to lock in their votes...</p>
         </div>
 
         <div className="w-full max-w-sm">
           <div className="flex justify-between text-xs text-gray-400 mb-3 px-1">
             <span>Readiness</span>
-            <span>{readyMembers.length} / {totalMembers}</span>
+            <span>{readyMembers.length} / {totalMembers} locked in</span>
           </div>
           <ReadinessSlots readyMembers={readyMembers} memberNames={memberNames} />
         </div>
@@ -86,25 +87,29 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ handleDeleteOption }) => {
     <div className="mb-8">
       <div className="flex items-center gap-2 text-2xl font-light mb-6 pl-4 text-rose-700">
         <Vote size={40} />
-        <h2>Vote Options</h2>
+        <h2>Cast Your Votes</h2>
       </div>
 
+      <p className="text-sm text-gray-400 pl-4 mb-4">
+        You have <span className="font-semibold text-rose-500">{remainingVotes}</span> vote{remainingVotes !== 1 ? "s" : ""} remaining
+      </p>
+
       <div className="space-y-4">
-        {options?.map((option) => (
+        {options?.map((option: Option) => (
           <VoteOptionItem
             key={option.id}
             option={option}
             user={user}
             myVotes={myVotes}
             remainingVotes={remainingVotes}
-            handleAddVote={createVote}
-            handleRemoveVote={deleteVote}
-            handleDeleteOption={handleDeleteOption}
+            isPending={isPending}
+            handleAddVote={addVote}
+            handleRemoveVote={removeVote}
           />
         ))}
 
         <div className="pt-4">
-          <ReadyButton userId={user.id} />
+          <ReadyButton remainingVotes={remainingVotes} />
         </div>
       </div>
     </div>

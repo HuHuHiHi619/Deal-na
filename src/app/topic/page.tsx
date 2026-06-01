@@ -11,7 +11,7 @@ export default function TopicPage() {
   const [lastSubmitTime, setLastSubmitTime] = useState(0);
 
   const { user } = useAuth();
-  const { setTitle } = useRoomFormContext();
+  const { setTitle } = useRoomFormContext() ?? {};
   const { getError, setError } = useUiStore();
   const error = getError("rawTitle");
 
@@ -45,7 +45,7 @@ export default function TopicPage() {
     setLastSubmitTime(now);
 
     try {
-      setTitle(rawTitle);
+      setTitle?.(rawTitle);
       setError("rawTitle", null);
     } catch (err : unknown) {
       console.error("Create topic error:", err);

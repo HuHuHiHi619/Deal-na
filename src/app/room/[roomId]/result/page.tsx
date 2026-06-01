@@ -3,23 +3,22 @@ import ExitRoomButton from "@/app/component/button/ExitRoomButton";
 import LogoutButton from "@/app/component/button/LogoutButton";
 import { VoteResultsList } from "@/app/component/vote/VoteResultList";
 import { WinnersSection } from "@/app/component/vote/WinnerSection";
+import useVoteMutations from "@/app/hooks/mutation/useVoteMutations";
+import useRoomQuery from "@/app/hooks/query/useRoomQuery";
+import useVoteQuery from "@/app/hooks/query/useVotesQuery";
+import useRoomSession from "@/app/hooks/useRoomSession";
 import { useVoteResult } from "@/app/hooks/useVoteResult";
-import { useRoom } from "@/app/store/room/useRoomStore";
-import { useUiStore } from "@/app/store/useUiStore";
-import { useVoteStore } from "@/app/store/vote/useVoteStore";
 import { AppWindow } from "lucide-react";
-import React, { useEffect } from "react";
+import { useParams } from "next/navigation";
+import React from "react";
 
 function Page() {
-  const { voteResults } = useVoteStore();
-  const { currentRoom } = useRoom();
-  const { setLoading } = useUiStore();
+ const { roomId }: { roomId: string } = useParams();
+  const { isJoined } = useRoomSession();
+  const { data : currentRoom } = useRoomQuery(roomId , isJoined);
+  const { data : votesData } = useVoteQuery(roomId , isJoined);
 
-  useEffect(() => {
-    setLoading("resultLoading", false);
-  }, [setLoading]);
-
-  const { winners, results, totalVotes } = useVoteResult({ voteResults });
+  const { winners , results , totalVotes} = useVoteResult({ voteResults: votesData?.formattedResult ?? [] });
 
   return (
     <div className="">

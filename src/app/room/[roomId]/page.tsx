@@ -1,31 +1,34 @@
 "use client";
-import { useParams } from "next/navigation";
-import { useOptionStore } from "@/app/store/option/useOptionStore";
-import { useRoom } from "@/app/store/room/useRoomStore";
+import { useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/app/store/auth/useAuth";
 import VoteOptions from "@/app/room/[roomId]/vote/page";
 import { RoomGuard } from "@/app/component/room/RoomGuard";
-import { useRoomSession } from "./RoomSessionProvider";
 import { AppWindow } from "lucide-react";
+import useRoomSession from "@/app/hooks/useRoomSession";
+import useRoomQuery from "@/app/hooks/query/useRoomQuery";
 
 export default function RoomPage() {
   const { roomId }: { roomId: string } = useParams();
+  const router = useRouter();
   const { user } = useAuth();
-  const { deleteOption } = useOptionStore();
-  const { currentRoom, clearError, error: storeError } = useRoom();
   const { isJoined, error: sessionError } = useRoomSession();
 
-  const error = sessionError ?? storeError;
+  const { data: currentRoom } = useRoomQuery(roomId, isJoined);
+
+  useEffect(() => {
+    if (isJoined && currentRoom && currentRoom.started_at === null) {
+      router.replace(`/room/${roomId}/lobby`);
+    }
+  }, [isJoined, currentRoom?.started_at, roomId, router]);
 
   return (
     <RoomGuard
-      isJoining={!isJoined && !error}
+      isJoining={!isJoined && !sessionError}
       isJoined={isJoined}
       roomId={roomId}
-      error={error}
-      clearError={clearError}
+      error={sessionError}
       user={user ?? null}
-      currentRoom={currentRoom}
     >
       <div className="min-h-screen backdrop-blur-md">
         <header className="sticky top-0 z-10 bg-gradient-to-r from-rose-300 to-rose-800 backdrop-blur-md rounded-b-xl ring-offset-4 ring-4 ring-rose-400 shadow-sm">
@@ -36,7 +39,7 @@ export default function RoomPage() {
         </header>
 
         <main className="max-w-4xl mx-auto px-4 py-8">
-          <VoteOptions handleDeleteOption={deleteOption} />
+          <VoteOptions roomId={roomId} isJoined={isJoined}/>
         </main>
       </div>
     </RoomGuard>
