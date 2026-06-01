@@ -1,33 +1,27 @@
 'use client';
 import { QRCodeSVG } from "qrcode.react";
-import { useRoom } from "../../store/room/useRoomStore";
 import Link from "next/link";
 import { usePortal } from "../../hooks/usePortal";
-import { useUiStore } from "../../store/useUiStore";
 import { Copy, X } from "lucide-react";
 import useClipboard from "../../hooks/useClipboard";
 import { useEffect, useState } from "react";
 
-export default function ShareRoom() {
-  const { currentRoom } = useRoom();
-  const { setIsPopup, isLoading } = useUiStore();
+interface ShareRoomProps {
+  room: { url?: string }
+  onClose: () => void
+}
+
+export default function ShareRoom({ room, onClose }: ShareRoomProps) {
   const portal = usePortal();
   const { isCopied, copyToClipboard } = useClipboard();
   const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
-     const popupQrLoading = isLoading("popupQr");
-    if (currentRoom && popupQrLoading) {
-    
-      const timer = setTimeout(() => {
-        setShowContent(true);
-      }, 500);
+    const timer = setTimeout(() => setShowContent(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
-      return () => clearTimeout(timer);
-    }
-  }, [currentRoom, isLoading]);
-
-  if (!currentRoom) return null;
+  if (!room) return null;
 
   return portal(
     <div className="popup-center bg-amber-100/20 backdrop-blur-2xl p-6 rounded-2xl shadow-sm border border-rose-200/50">
@@ -42,7 +36,6 @@ export default function ShareRoom() {
           <p className="text-gray-500 text-sm mt-2">Almost ready!</p>
         </div>
       ) : (
-      
         <>
           <div className="text-center mb-6">
             <h1 className="text-2xl font-light text-rose-700 mb-2">
@@ -56,15 +49,15 @@ export default function ShareRoom() {
           {/* Room URL Link */}
           <div className="mb-6">
             <div className="bg-rose-100 rounded-xl p-4 hover:bg-rose-400/50 shadow-md hover:border-rose-300 transition-all duration-300 group cursor-pointer relative">
-              <Link href={currentRoom.url || ""}>
+              <Link href={room.url || ""}>
                 <div className=" flex items-center justify-between">
                   <p className="text-gray-700 font-medium truncate mr-3">
-                    {currentRoom.url}
+                    {room.url}
                   </p>
                 </div>
               </Link>
               <button
-                onClick={() => copyToClipboard(currentRoom.url || "")}
+                onClick={() => copyToClipboard(room.url || "")}
                 disabled={isCopied}
                 className={`
                   absolute right-3 top-1/2 transform -translate-y-1/2
@@ -85,7 +78,7 @@ export default function ShareRoom() {
           </div>
 
           {/* QR Code */}
-          {currentRoom.url && (
+          {room.url && (
             <div className="text-center">
               <div className="inline-block bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-rose-200 shadow-sm">
                 <div className="mb-3">
@@ -93,7 +86,7 @@ export default function ShareRoom() {
                 </div>
                 <div className="p-3 bg-white rounded-lg inline-block">
                   <QRCodeSVG
-                    value={currentRoom.url}
+                    value={room.url}
                     size={140}
                     level="M"
                     bgColor="#fdf2f8"
@@ -105,7 +98,7 @@ export default function ShareRoom() {
           )}
           <div className="flex justify-center">
             <button
-              onClick={() => setIsPopup(false)}
+              onClick={onClose}
               className="bg-rose-400 text-white p-2 mt-4 rounded-full hover:scale-105 hover:bg-rose-500 cursor-pointer transition-all duration-300"
             >
               <X size={30} />
