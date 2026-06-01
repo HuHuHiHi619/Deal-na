@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import AuthProvider from "./Guard/AuthProvider";
-
-
-
-
+import Providers from "./Providers";
 
 export const metadata: Metadata = {
   title: "Deal Na",
@@ -17,15 +14,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="th"
-    
-    >
+    <html lang="th">
       <body>
-        <AuthProvider>
-          {children}
-          <div id="popup-root" />
-        </AuthProvider>
+        <Providers>
+          <AuthProvider>
+            {children}
+            <div id="popup-root" />
+          </AuthProvider>
+        </Providers>
       </body>
     </html>
   );

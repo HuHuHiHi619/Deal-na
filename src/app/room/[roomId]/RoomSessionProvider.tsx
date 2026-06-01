@@ -53,9 +53,11 @@ export const RoomSessionProvider = ({
   const invalidatesRoomMembers = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["members", roomId] });
   }, [queryClient, roomId]);
+
   const invalidatesOptions = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["options", roomId] });
   }, [queryClient, roomId]);
+  
   const invalidatesRoom = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["room", roomId] });
   }, [queryClient, roomId]);
