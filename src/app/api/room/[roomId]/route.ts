@@ -14,7 +14,7 @@ export async function GET(
 
     const { data: room, error } = await supabase
       .from("room")
-      .select("id, room_code, title, status, created_at, expired_at, created_by, started_at")
+      .select("id, room_code, title, created_at, expired_at, created_by, started_at")
       .eq("id", roomId)
       .single();
 
@@ -87,10 +87,21 @@ export async function POST(
       );
     }
 
+    // Insert and read-back are kept as separate statements on purpose: chaining
+    // .select() onto the insert produces INSERT ... RETURNING, whose returned row
+    // is filtered through the is_member_of_room(room_id) SELECT policy and fails
+    // with 42501 for a brand-new joiner. A standalone select after the row exists
+    // passes the policy cleanly.
+    const { error: insertError } = await supabase
+      .from("room_members")
+      .insert({ room_id: roomId, user_id: userId });
+    if (insertError) throw insertError;
+
     const { data: newMember, error: newMemberError } = await supabase
       .from("room_members")
-      .insert({ room_id: roomId, user_id: userId })
-      .select("id, user_id, room_id, joined_at") 
+      .select("id, user_id, room_id, joined_at")
+      .eq("room_id", roomId)
+      .eq("user_id", userId)
       .single();
     if (newMemberError) throw newMemberError;
 

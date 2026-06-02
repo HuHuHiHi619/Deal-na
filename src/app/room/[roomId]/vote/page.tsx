@@ -24,17 +24,11 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ roomId, isJoined }) => {
   const { data: options } = useOptionsQuery(roomId, isJoined);
   const { data: votesData } = useVoteQuery(roomId, isJoined);
   const { data: members } = useMembersQuery(roomId, isJoined);
-  const { totalMembers, readyMembers, memberNames, sendUnready } = useRoomSession();
+  const { totalMembers, lockedMembers, memberNames } = useRoomSession();
   const { user } = useAuth();
   const { addVote, removeVote, isPending } = useVoteMutations(roomId);
   const router = useRouter();
   const [resultLoading, setResultLoading] = useState(false);
-
-  // Reset lobby ready state when entering the vote page
-  useEffect(() => {
-    sendUnready?.();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const { myVotes, remainingVotes } = useVoteStats({
     votes: votesData?.votes,
@@ -44,14 +38,14 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ roomId, isJoined }) => {
 
   // Use DB member list as denominator — presence totalMembers lags ~300ms (RISK-6)
   useEffect(() => {
-    if (members && members.length >= 2 && (members as string[]).every((id) => readyMembers.includes(id))) {
+    if (members && members.length >= 2 && (members as string[]).every((id) => lockedMembers.includes(id))) {
       setResultLoading(true);
       const timeout = setTimeout(() => {
         router.push(`/room/${roomId}/result`);
       }, 1000);
       return () => clearTimeout(timeout);
     }
-  }, [members, readyMembers, router, roomId]);
+  }, [members, lockedMembers, router, roomId]);
 
   if (!user) return null;
 
@@ -59,7 +53,7 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ roomId, isJoined }) => {
     return <LoadingPage title="All votes locked in!" subtitle="Calculating results..." />;
   }
 
-  const isMyReady = readyMembers.includes(user.id);
+  const isMyReady = lockedMembers.includes(user.id);
 
   if (isMyReady) {
     return (
@@ -75,9 +69,9 @@ const VoteOptions: React.FC<VoteOptionsProps> = ({ roomId, isJoined }) => {
         <div className="w-full max-w-sm">
           <div className="flex justify-between text-xs text-gray-400 mb-3 px-1">
             <span>Readiness</span>
-            <span>{readyMembers.length} / {totalMembers} locked in</span>
+            <span>{lockedMembers.length} / {totalMembers} locked in</span>
           </div>
-          <ReadinessSlots readyMembers={readyMembers} memberNames={memberNames} />
+          <ReadinessSlots readyMembers={lockedMembers} memberNames={memberNames} />
         </div>
       </div>
     );

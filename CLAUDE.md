@@ -40,55 +40,94 @@ Requires `.env.local` with:
 - **`AuthGuard`** (`Guard/AuthGuard.tsx`) is used on protected pages; redirects unauthenticated users to `/?redirect=...`.
 - Auth state lives in `store/auth/useAuth.ts` (Zustand). Supports `facebook`, `google`, and `email` providers via `loginWithProvider`.
 
-### Room lifecycle (`hooks/useRoomLifeCycle.tsx`)
-This is the central orchestrator for the room experience:
-1. Calls `joinRoom` (API + Zustand state) when the user navigates to `/room/[roomId]`
-2. After joining, triggers `subscribeAll` (Supabase Realtime) and the `onRoomJoined` callback
-3. When the user leaves `/room/` routes, calls `exitRoom` (clears all stores) and `unsubscribeAll`
-4. `RoomGuard` component wraps room pages and handles loading/error/unauthenticated states
+### Room lifecycle (`RoomSessionProvider`)
+`src/app/room/[roomId]/RoomSessionProvider.tsx` is the central orchestrator, mounted via `layout.tsx` for all `/room/[roomId]/...` routes.
+
+Lifecycle stages (all within a single `useEffect([roomId, userId])`):
+1. Creates one Supabase channel `room:${roomId}`, registers all 8 handlers **before** `.subscribe()`
+2. On first `SUBSCRIBED`: calls `POST /api/room/[roomId]` to join, then fetches all state slices (room, members, options, votes) via versioned fetches
+3. Sets `isJoined = true`, tracks presence with `{ isReady: false }`
+4. On subsequent `SUBSCRIBED` (reconnect): re-fetches all slices and re-tracks presence
+5. Cleanup: untracks presence, clears all 5 stores, removes channel
+
+Exposes `RoomSessionContext` consumed via `useRoomSession()`:
+```ts
+{
+  isJoined: boolean;
+  error: string | null;
+  totalMembers: number;
+  readyMembers: string[];             // presence status=true (lobby-ready)
+  lockedMembers: string[];            // presence locked=true (vote-locked)
+  memberNames: Map<string, string>;
+  sendReady: ((name?) => Promise<boolean>) | null;   // lobby "I'm Ready" → status:true
+  sendUnready: (() => Promise<boolean>) | null;       // status:false
+  sendLock: ((name?) => Promise<boolean>) | null;     // vote "Lock In" → locked:true
+  sendUnlock: (() => Promise<boolean>) | null;        // locked:false (Another Round reset, future)
+}
+```
+
+`RoomGuard` (`component/room/RoomGuard.tsx`) gates page content on `isJoined`; shows auth-check → error → loading → children.
 
 ### Realtime (Supabase channels)
-Four parallel Supabase Realtime subscriptions are managed by `useRealtimeRoom`:
-- `useRoomRealtimeStore` — listens for room/member inserts
-- `useOptionRealtimeStore` — listens for option changes
-- `useVoteRealtimeStore` — listens for vote inserts/deletes
-- `useRoomRealtimeReadyStore` — listens for ready-state changes per user
+A **single channel** `room:${roomId}` is owned exclusively by `RoomSessionProvider`. All 8 `postgres_changes` handlers (room, room_members, options, votes) and one presence sync handler are registered on it.
 
-All subscribe/unsubscribe calls are coordinated via `Promise.allSettled` to avoid partial states.
+**Reconciliation model:** realtime events are invalidation signals only — they trigger a versioned full-refetch (`setMembers`, `setOptions`, `setVotes`), never direct-patch the store. Votes are debounced 50 ms before refetch. Optimistic writes (`addVote`/`removeVote`) give immediate UI feedback; the subsequent refetch reconciles.
+
+**Versioned fetches** (module-level counters) prevent stale responses from overwriting fresher data.
+
+**Presence** tracks `{ user_id, name, status, locked }` per member, written into `RoomSessionContext` (not a store) on every sync event. **Two distinct booleans:** `status` = lobby-ready (gates the host's Start button), `locked` = vote-locked (when all members locked → advance to Result). They are separate because lobby→vote shares one `RoomSessionProvider`, so a single flag would leak lobby-readiness into the vote session. `track()` replaces the whole payload, so writes merge through a `selfMetaRef`. Presence is ephemeral and **not subject to RLS**.
 
 ### Zustand store structure
 ```
 store/
-  auth/useAuth.ts              # Session, user, login/logout
-  room/useRoomStore.ts         # currentRoom, joinRoom, exitRoom (persisted to localStorage)
-  room/useRoomMemberStore.ts   # Member list for current room
-  room/useRoomReadyStore.ts    # Who is ready
-  room/useRoomRealtimeStore.ts # Supabase Realtime channel for room
-  room/useRoomRealtimeReadyStore.ts
-  option/useOptionStore.ts     # Options list, fetch/delete
-  option/useOptionRealtimeStore.ts
-  vote/useVoteStore.ts         # Votes, createVote, deleteVote
-  vote/useVoteRealtimeStore.ts
-  useUiStore.ts                # loading/error flags keyed by operation name
+  auth/useAuth.ts              # user, session — loginWithProvider, signOut
+  room/useRoomStore.ts         # currentRoom, rooms, createRoom, startRoom, exitRoom (persisted)
+  room/useRoomMemberStore.ts   # members (string[]) — setMembers, clearMembers
+  room/useRoomReadyStore.ts    # readyMembers, totalMembers, memberNames — setReady, clearReady
+  option/useOptionStore.ts     # optionsMap (Map) — setOptions, deleteOption
+  vote/useVoteStore.ts         # votesMap (Map), voteResults — setVotes, addVote, removeVote, createVote, deleteVote
+  useUiStore.ts                # loading/error flags keyed by UiKey — setLoading, setError, clearAll
   useRoomForm.ts               # Form state for room creation
 ```
 
-`useRoom` (room store) is persisted with `zustand/middleware/persist` — `currentRoom` and `rooms` survive page refresh.
+**Deleted stores** (removed in refactor): `useRoomRealtimeStore`, `useOptionRealtimeStore`, `useVoteRealtimeStore`, `useRoomRealtimeReadyStore`.
+
+**Write rules:** stores expose only full-replace setters (e.g. `setMembers`, `setOptions`, `setVotes`). No direct-patch methods. Only `RoomSessionProvider` calls these setters (via versioned fetches or presence sync). Optimistic `addVote`/`removeVote` are the sole exception.
+
+`useRoomStore` is persisted with `zustand/middleware/persist` — `currentRoom` and `rooms` survive page refresh.
 
 ### API routes (`src/app/api/`)
-All routes authenticate by extracting the `Authorization: Bearer <token>` header and calling `getServerUser(token)` from `lib/supabase.ts` (creates a Supabase client with the JWT).
+All routes authenticate via `requireAuth(req)` (`lib/supabase.ts`): extracts `Authorization: Bearer <token>`, verifies with Supabase, returns `{ user, supabase }` or 401.
 
-- `POST /api/room/create` — creates room + adds creator to `room_members` + inserts options
-- `GET /api/room/[roomId]` — fetch room data
-- `GET /api/option/[roomId]` — fetch options for a room
-- `GET /api/vote/result` — fetch vote results
+| Route | Method | Purpose |
+|---|---|---|
+| `/api/room/create` | POST | Create room + add creator to room_members + insert options |
+| `/api/room/[roomId]` | GET | Fetch full room snapshot (bootstrap) |
+| `/api/room/[roomId]` | POST | Join room (insert into room_members if not exists) |
+| `/api/room/[roomId]/members` | GET | Fetch member user_id list |
+| `/api/room/[roomId]/start` | POST | Host-only: set `started_at` timestamp |
+| `/api/option/[roomId]` | GET | Fetch options for a room |
+| `/api/option/[roomId]` | POST | Create options (bulk) |
+| `/api/option/[roomId]/[optionId]` | DELETE | Delete option (creator-only via RLS) |
+| `/api/vote` | POST | Create a vote |
+| `/api/vote` | DELETE | Delete a vote |
+| `/api/vote/result` | GET | Fetch vote results (get_vote RPC + raw votes) |
 
-### `actionWrapper` pattern
-Most store actions call `actionWrapper(loadingKey, { action, onSuccess, onError })` (`utils/actionWrapper.ts`). It:
-1. Sets `useUiStore` loading state for the key
-2. Calls `getRequiredContext()` to get `{ userId, roomId }` from current store state
-3. Runs the action
-4. Clears loading / sets error on the UI store
+### Supabase / RLS gotchas
+- **Never chain `.select()` onto an insert into a table whose SELECT policy depends on the row itself** (e.g. `is_member_of_room(room_id)`, `auth.uid() = created_by`). `.insert(...).select(...)` compiles to `INSERT … RETURNING`, and the returned row is filtered through the SELECT policy *in the same statement* — for a brand-new row this throws `42501 "new row violates row-level security policy"`, which misleadingly reads as an INSERT/`with_check` failure. **Insert first, then read back with a separate `.select().eq(...)`.** The `room_members` join in `api/room/[roomId]/route.ts` follows this; full write-up in `.claude/architecture-refactor/diagnosis-rls-insert-returning-42501.md`.
+- Trusted server routes already authenticate via `requireAuth` and set `user_id` server-side; for RLS-heavy writes a service-role client is a safe alternative to forwarding the user JWT.
+- Debugging RLS: a `public.debug_auth()` SQL fn returning `auth.uid()/auth.role()/auth.jwt()->>'sub'`, called via `supabase.rpc(...)` in a route, shows exactly what RLS sees — settles "is it auth or the policy?" in one request.
+
+### Async action patterns
+Two patterns coexist:
+
+**`useAsyncAction`** (`hooks/useAsyncAction.tsx`) — used in hooks/components:
+- Executes an action, manages `useUiStore` loading/error for a given key, calls `onSuccess`/`onError`
+
+**`actionWrapper`** (`utils/actionWrapper.ts`) — used in store actions:
+1. Sets `useUiStore` loading state
+2. Calls `getRequiredContext()` to get `{ userId, roomId }` from store state
+3. Runs the action, clears loading / sets error
 
 ### Path aliases
 `@/` maps to `src/` (configured in `vitest.config.ts` and Next.js).
@@ -99,20 +138,9 @@ Tests use Vitest + jsdom + `@testing-library/react`. Test files sit next to the 
 ## AI Behavior Guidelines
 - **Output Economy**: Be extremely concise. Use code diffs or targeted edits instead of re-printing entire files. No conversational fluff.
 - **Security**: NEVER print actual secret values from `.env` files. Mask them as `KEY=******`.
+- **ACTION** : NEVER push anything if i didn't approve.
 
-# Realtime Architecture Rules
-
-Before modifying realtime logic, read:
-
-- docs/realtime/INVARIANTS.md
-- docs/realtime/TARGET_RUNTIME_FLOW.md
-- docs/realtime/STATE_OWNERSHIP_MATRIX.md
-
-Never redesign realtime architecture unless explicitly requested.
-
-Implementation changes must preserve:
-- subscription ordering guarantees
-- reconnect recovery flow
-- authoritative snapshot model
-- single ownership lifecycle
-- idempotent reconciliation
+## Realtime issues
+read this everytime when work with realtime
+- @FLOW.md , @CONTEXT.md , @.claude/docs/RLS.json , @.claude/docs/RLS.json
+- when finished realtime task you have to update changes at @FLOW.md or @CONTEXT.md ( show draft and wait for approve )

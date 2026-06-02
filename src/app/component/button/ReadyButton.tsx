@@ -9,7 +9,7 @@ interface ReadyButtonProps {
 }
 
 const ReadyButton: React.FC<ReadyButtonProps> = ({ remainingVotes }) => {
-  const { sendReady } = useRoomSession();
+  const { sendLock } = useRoomSession();
   const { user } = useAuth();
   const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,7 +20,7 @@ const ReadyButton: React.FC<ReadyButtonProps> = ({ remainingVotes }) => {
       setError("You have to vote at least once before locking in.");
       return;
     }
-    if (!sendReady) {
+    if (!sendLock) {
       setError("Connection not ready. Please wait...");
       return;
     }
@@ -31,7 +31,7 @@ const ReadyButton: React.FC<ReadyButtonProps> = ({ remainingVotes }) => {
       user?.user_metadata?.full_name ??
       user?.email ??
       undefined;
-    const result = await sendReady(name);
+    const result = await sendLock(name);
     if (!result) {
       setError("Failed to lock in. Please try again.");
       setIsLoading(false);

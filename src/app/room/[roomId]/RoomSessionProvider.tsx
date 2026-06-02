@@ -7,9 +7,12 @@ interface RoomSessionContextValue {
   error: string | null;
   totalMembers: number;
   readyMembers: string[];
+  lockedMembers: string[];
   memberNames: Map<string, string>;
   sendReady: ((name?: string) => Promise<boolean>) | null;
   sendUnready: (() => Promise<boolean>) | null;
+  sendLock: ((name?: string) => Promise<boolean>) | null;
+  sendUnlock: (() => Promise<boolean>) | null;
 }
 
 interface RoomSessionProps {
@@ -23,6 +26,7 @@ interface PresenceMeta {
   user_id: string;
   name?: string;
   status?: boolean;
+  locked?: boolean;
 }
 
 export const RoomSessionContext = createContext<RoomSessionContextValue | null>(
@@ -40,11 +44,20 @@ export const RoomSessionProvider = ({
   const [error, setError] = useState<string | null>(null);
   const [totalMembers, setTotalmembers] = useState<number>(0);
   const [readyMembers, setReadyMembers] = useState<string[]>([]);
+  const [lockedMembers, setLockedMembers] = useState<string[]>([]);
   const [memberNames, setMemberNames] = useState<Map<string, string>>(
     new Map(),
   );
 
   const channelRef = useRef<any>(null);
+  // Self presence meta. track() replaces the whole payload, so we merge fields
+  // here to avoid e.g. locking wiping the lobby-ready `status` (and vice versa).
+  const selfMetaRef = useRef<PresenceMeta>({
+    user_id: userId,
+    name: "Player",
+    status: false,
+    locked: false,
+  });
 
   const invalidatesVotes = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["votes", roomId] });
@@ -92,15 +105,18 @@ export const RoomSessionProvider = ({
               setTotalmembers(members.length);
 
               const readyList: string[] = [];
+              const lockedList: string[] = [];
               const namesMap = new Map<string, string>();
 
               members.forEach((meta) => {
                 namesMap.set(meta.user_id, meta.name || "anonymous");
                 if (meta.status) readyList.push(meta.user_id);
+                if (meta.locked) lockedList.push(meta.user_id);
               });
 
               setMemberNames(namesMap);
               setReadyMembers(readyList);
+              setLockedMembers(lockedList);
             },
           )
           .on(
@@ -149,11 +165,7 @@ export const RoomSessionProvider = ({
         channel.subscribe(async (status) => {
           if (status === "SUBSCRIBED") {
             try {
-              await channel.track({
-                user_id: userId,
-                name: "Player",
-                status: false,
-              });
+              await channel.track(selfMetaRef.current);
               setIsJoined(true);
             } catch (err) {
               setError(
@@ -185,48 +197,67 @@ export const RoomSessionProvider = ({
     invalidatesRoom,
   ]);
 
-  const sendReady = useCallback(
-    async (name?: string): Promise<boolean> => {
+  // Merge a partial update into self presence meta and re-track the full payload.
+  const trackSelf = useCallback(
+    async (patch: Partial<PresenceMeta>, errMsg: string): Promise<boolean> => {
       if (!channelRef.current) return false;
-
+      selfMetaRef.current = { ...selfMetaRef.current, ...patch };
       try {
-        await channelRef.current.track({
-          user_id: userId,
-          name: name || memberNames.get(userId) || "Player",
-          status: true,
-        });
+        await channelRef.current.track(selfMetaRef.current);
         return true;
       } catch (error) {
-        setError(error instanceof Error ? error.message : "Failed to ready");
+        setError(error instanceof Error ? error.message : errMsg);
         return false;
       }
     },
-    [userId, memberNames],
+    [],
   );
-  const sendUnready = useCallback(async (): Promise<boolean> => {
-    if (!channelRef.current) return false;
-    try {
-      await channelRef.current.track({
-        user_id: userId,
-        name: memberNames.get(userId) || "Player",
-        status: false,
-      });
 
-      return true;
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to unready");
-      return false;
-    }
-  }, [userId, memberNames]);
+  const sendReady = useCallback(
+    (name?: string) =>
+      trackSelf(
+        {
+          status: true,
+          name: name || memberNames.get(userId) || "Player",
+        },
+        "Failed to ready",
+      ),
+    [trackSelf, userId, memberNames],
+  );
+
+  const sendUnready = useCallback(
+    () => trackSelf({ status: false }, "Failed to unready"),
+    [trackSelf],
+  );
+
+  const sendLock = useCallback(
+    (name?: string) =>
+      trackSelf(
+        {
+          locked: true,
+          name: name || memberNames.get(userId) || "Player",
+        },
+        "Failed to lock",
+      ),
+    [trackSelf, userId, memberNames],
+  );
+
+  const sendUnlock = useCallback(
+    () => trackSelf({ locked: false }, "Failed to unlock"),
+    [trackSelf],
+  );
 
   const contextValue: RoomSessionContextValue = {
     isJoined,
     error,
     totalMembers,
     readyMembers,
+    lockedMembers,
     memberNames,
     sendReady,
     sendUnready,
+    sendLock,
+    sendUnlock,
   };
 
   return (
