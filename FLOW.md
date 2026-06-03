@@ -38,10 +38,6 @@
 - **CreateRoom** : Is there actions for create room too much? maybe there is better flow
 - **Lobby** : There is any options better for joiner. QR CODE is good just scan but link is hard. host have to copied link and paste to  joiner chat  
 
-### behavier bugs
-- ~~**lobby** : user joined room but lobby show 0 members joined. host see 1 member joined which is himself. everybody stuck~~ → FIXED: lobby count now reads presence `totalMembers` from `useRoomSession()`.
-- ~~**vote** : guest stuck on "locked in" / "calculating results" on entering vote page~~ → FIXED: split presence into `status` (lobby-ready) vs `locked` (vote-locked); vote page reads `lockedMembers`.
-- ~~**join** : guest hits 42501 RLS error joining a room (with RLS enabled)~~ → FIXED: don't chain `.select()` on the `room_members` insert — `INSERT … RETURNING` tripped the `is_member_of_room` SELECT policy. See `.claude/architecture-refactor/diagnosis-rls-insert-returning-42501.md`.
 
 ## State Transitions (Critical for Realtime)
 Lobby → VoteSession → LockedState → Result
