@@ -1,14 +1,28 @@
 "use client";
 
+import React from "react";
+import { useAuth } from "@/app/store/auth/useAuth";
+import { RoomSessionProvider } from "./RoomSessionProvider";
+import LoadingPage from "@/app/component/LoadingPage";
+
+
 export default function RoomLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ roomId: string }>;
 }) {
- 
+  const { roomId } = React.use(params);
+  const session = useAuth((state) => state.session);
+
+  if (!session) return <LoadingPage />;
+
   return (
-   <div className="min-h-screen bg-gradient-to-br from-rose-50/40 to-lavender-50/40 backdrop-blur-md">
-      {children}
+    <div className="min-h-screen bg-gradient-to-br from-rose-50/40 to-lavender-50/40 backdrop-blur-md">
+      <RoomSessionProvider roomId={roomId} userId={session.user.id} token={session.access_token}>
+        {children}
+      </RoomSessionProvider>
     </div>
   );
 }

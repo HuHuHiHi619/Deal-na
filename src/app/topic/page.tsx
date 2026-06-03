@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useRoomForm } from "../store/useRoomForm";
+import { useRoomFormContext } from "../room/RoomFormContext";
 import { useAuth } from "../store/auth/useAuth";
 import { Ban, PencilLine } from "lucide-react";
 import { useUiStore } from "../store/useUiStore";
@@ -11,7 +11,7 @@ export default function TopicPage() {
   const [lastSubmitTime, setLastSubmitTime] = useState(0);
 
   const { user } = useAuth();
-  const { setTitle } = useRoomForm();
+  const { setTitle } = useRoomFormContext() ?? {};
   const { getError, setError } = useUiStore();
   const error = getError("rawTitle");
 
@@ -45,8 +45,7 @@ export default function TopicPage() {
     setLastSubmitTime(now);
 
     try {
-      console.log("title is :", rawTitle);
-      setTitle(rawTitle);
+      setTitle?.(rawTitle);
       setError("rawTitle", null);
     } catch (err : unknown) {
       console.error("Create topic error:", err);

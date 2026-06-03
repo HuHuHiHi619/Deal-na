@@ -1,12 +1,14 @@
 "use client"
+export const dynamic = 'force-dynamic';
 import React from "react";
-import { useRoomForm } from "../store/useRoomForm";
+import { useRoomFormContext } from "../room/RoomFormContext";
 import { PlusCircle } from "lucide-react";
 import OptionForm from "../component/room/OptionForm";
 
 function OptionsPage() {
-  const { titleInput, optionsInput, setOptionsInput, addOptionInput } =
-    useRoomForm();
+  const ctx = useRoomFormContext();
+  if (!ctx) return null;
+  const { titleInput, optionsInput, setOptionsInput, addOptionInput } = ctx;
 
   return (
     <div className="flex  items-center justify-center p-4">

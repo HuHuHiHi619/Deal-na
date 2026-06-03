@@ -14,7 +14,7 @@ export default function LogoutButton({ mini = false }) {
       router.push("/");
     },
     onError: (err) => {
-      console.log("Logout error:", err);
+      console.error("Logout error:", err);
     },
   });
 

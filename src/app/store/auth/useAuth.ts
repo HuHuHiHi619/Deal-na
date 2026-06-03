@@ -41,7 +41,6 @@ export interface AuthUser extends User {
  interface AuthState {
   user: AuthUser | null;
   session: Session | null;
-  setUser: (user: AuthUser | null) => void;
   setSession: (session: Session | null) => void;
 
   loginWithProvider: <P extends AuthProvider>(
@@ -59,25 +58,35 @@ export const useAuth = create<AuthState>((set) => ({
   user: null,
   session: null,
 
-  setUser: (user: AuthUser | null) => set({ user }),
   setSession: (session: Session | null) =>
     set({
       session,
-      user: session?.user,
+      user: session?.user ?? null,
     }),
 
   loginWithProvider : async <P extends AuthProvider>(provider : P , options? : ProviderOptions[P]) => {
     switch (provider) {
-      case 'facebook' : 
-      case 'google' : 
+      case 'facebook' :
+      case 'google' : {
+        const raw = new URLSearchParams(window.location.search).get('redirect') ?? '/room';
+        let redirectPath = '/room';
+        try {
+          const parsed = new URL(raw, window.location.origin);
+          if (parsed.origin === window.location.origin) {
+            redirectPath = parsed.pathname + parsed.search + parsed.hash;
+          }
+        } catch {
+          // malformed — fall back to /room
+        }
         const { error : oauthError } = await supabase.auth.signInWithOAuth({
           provider,
           options : {
-              redirectTo: `${window.location.origin}/room`,
+              redirectTo: `${window.location.origin}${redirectPath}`,
           },
         });
         if (oauthError) throw oauthError;
-      break;
+        break;
+      }
 
       case 'email' :
         if (!options) throw new Error('Options are required for email login');

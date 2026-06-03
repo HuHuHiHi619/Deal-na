@@ -1,0 +1,99 @@
+/* ============================================================
+   Confetti Pop — Design Tokens (Tailwind v4)
+   Source of truth. Import this once at app entry: @import "./theme.css";
+   Rule: never hardcode color / radius / shadow / font size in components.
+   If you need a new value, add it HERE first, then use the util class.
+   ============================================================ */
+
+@import "tailwindcss";
+
+/* Load Fredoka (weights 400/500/600/700) in your index.html <head>:
+   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+*/
+
+@theme {
+  /* ---------- Colors ---------- */
+  --color-cream: #FFF6EC;      /* page background     */
+  --color-card: #FFFFFF;       /* card surface        */
+  --color-ink: #1F1B2E;        /* headings / body     */
+  --color-muted: #8A8395;      /* secondary text      */
+  --color-line: #F0E6D6;       /* borders / dividers  */
+
+  --color-coral: #FF6B6B;      /* primary CTA / brand */
+  --color-pink: #FF8FB1;       /* gradient pair       */
+  --color-sun: #FFD93D;        /* highlight           */
+  --color-mint: #5CD9A8;       /* success / joined    */
+  --color-sky: #5BA8FF;        /* tertiary            */
+  --color-lilac: #C39EFF;      /* quaternary          */
+
+  /* ---------- Typography ---------- */
+  --font-display: var(--font-fredoka), "Fredoka", system-ui, sans-serif;
+
+  /* role-based sizes  (size / line-height baked via utilities below) */
+  --text-display: 32px;        /* winner            700 */
+  --text-display--line-height: 1.1;
+  --text-title: 26px;          /* page title        600 / -0.2 */
+  --text-title--line-height: 1.15;
+  --text-title--letter-spacing: -0.2px;
+  --text-heading: 22px;        /* heading           600 */
+  --text-heading--line-height: 1.2;
+  --text-body: 15px;           /* body              500 */
+  --text-body--line-height: 1.4;
+  --text-caption: 13px;        /* caption           500 */
+  --text-caption--line-height: 1.4;
+  --text-eyebrow: 11px;        /* label/eyebrow     700 / +1.5 uppercase */
+  --text-eyebrow--line-height: 1.2;
+  --text-eyebrow--letter-spacing: 1.5px;
+  --text-numeral: 44px;        /* big numeral       700 / -1 */
+  --text-numeral--line-height: 1.0;
+  --text-numeral--letter-spacing: -1px;
+
+  /* ---------- Radius ---------- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+  --radius-4xl: 28px;
+  --radius-pill: 999px;
+
+  /* ---------- Shadows ---------- */
+  --shadow-sm: 0 4px 14px -10px rgba(31,27,46,.15);
+  --shadow-md: 0 10px 28px -18px rgba(31,27,46,.20);
+  --shadow-lg: 0 12px 30px -16px rgba(31,27,46,.18);
+  --shadow-glow-coral: 0 12px 26px -10px #FF6B6Baa;
+  --shadow-inset-bar: inset 0 1px 2px rgba(0,0,0,.04);
+
+  /* ---------- Spacing (4-pt grid additions) ---------- */
+  /* Tailwind's default scale covers most; these fill the spec's odd stops */
+  --spacing-4_5: 18px;
+  --spacing-5_5: 22px;
+}
+
+/* ============================================================
+   Helper utilities — typography roles & brand surfaces
+   These wrap multi-prop combos so components stay declarative.
+   ============================================================ */
+
+@layer utilities {
+  /* ---- type roles (size + weight + tracking in one class) ---- */
+  .type-display  { font: 700 var(--text-display)/1.1 var(--font-display); }
+  .type-title    { font: 600 var(--text-title)/1.15 var(--font-display); letter-spacing: -0.2px; }
+  .type-heading  { font: 600 var(--text-heading)/1.2 var(--font-display); }
+  .type-body     { font: 500 var(--text-body)/1.4 var(--font-display); }
+  .type-caption  { font: 500 var(--text-caption)/1.4 var(--font-display); }
+  .type-eyebrow  { font: 700 var(--text-eyebrow)/1.2 var(--font-display); letter-spacing: 1.5px; text-transform: uppercase; }
+  .type-numeral  { font: 700 var(--text-numeral)/1.0 var(--font-display); letter-spacing: -1px; }
+
+  /* ---- brand gradient (CTA / winner card) ---- */
+  .bg-brand-gradient {
+    background-image: linear-gradient(135deg, var(--color-coral), var(--color-pink));
+  }
+
+  /* ---- soft surface tints (per spec: 20–25% alpha) ---- */
+  .bg-coral-tint { background-color: color-mix(in srgb, var(--color-coral) 20%, transparent); }
+  .bg-mint-tint  { background-color: color-mix(in srgb, var(--color-mint) 20%, transparent); }
+  .bg-sun-tint   { background-color: color-mix(in srgb, var(--color-sun) 25%, transparent); }
+  .bg-sky-tint   { background-color: color-mix(in srgb, var(--color-sky) 20%, transparent); }
+}

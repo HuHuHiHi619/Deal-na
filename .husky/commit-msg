@@ -1,0 +1,26 @@
+branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+msg=$(head -n1 "$1")
+
+# (a) Never commit directly to main/master
+if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
+  echo "X Direct commits to '$branch' are blocked. Create a task branch first:"
+  echo "   git switch -c feat/your-task   (feat/ fix/ refactor/ chore/ docs/ ...)"
+  exit 1
+fi
+
+# (b) Supporting commit types are allowed on ANY branch
+case "$msg" in
+  chore:*|chore\(*|docs:*|docs\(*|test:*|test\(*|build:*|build\(*|ci:*|ci\(*|style:*|style\(*|revert:*|revert\(*)
+    exit 0 ;;
+esac
+
+# (c) Major type (feat/fix/refactor/perf) must match the branch prefix
+branch_type=${branch%%/*}
+commit_type=$(printf '%s' "$msg" | sed -E 's/^([a-z]+).*/\1/')
+
+if [ "$branch_type" != "$commit_type" ]; then
+  echo "X Commit type '$commit_type' does not match branch '$branch' (expected '$branch_type:')."
+  echo "   This branch is for '$branch_type' work only."
+  echo "   Move the commit to the right branch, or bypass once with: git commit --no-verify"
+  exit 1
+fi

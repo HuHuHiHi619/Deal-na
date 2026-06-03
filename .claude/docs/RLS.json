@@ -1,0 +1,132 @@
+[
+  {
+    "table_name": "options",
+    "rls_enabled": true,
+    "policyname": "users can delete own options",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "table_name": "options",
+    "rls_enabled": true,
+    "policyname": "room members can create options",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "((auth.uid() = user_id) AND is_member_of_room(room_id))"
+  },
+  {
+    "table_name": "options",
+    "rls_enabled": true,
+    "policyname": "room members can view options",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "cmd": "SELECT",
+    "qual": "is_member_of_room(room_id)",
+    "with_check": null
+  },
+  {
+    "table_name": "room",
+    "rls_enabled": true,
+    "policyname": "only creator can delete room",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "(auth.uid() = created_by)",
+    "with_check": null
+  },
+  {
+    "table_name": "room",
+    "rls_enabled": true,
+    "policyname": "authenticated can create rooms",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "true"
+  },
+  {
+    "table_name": "room",
+    "rls_enabled": true,
+    "policyname": "authenticated can read rooms",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "table_name": "room",
+    "rls_enabled": true,
+    "policyname": "Host can update room",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "cmd": "UPDATE",
+    "qual": "(auth.uid() = created_by)",
+    "with_check": "(auth.uid() = created_by)"
+  },
+  {
+    "table_name": "room_members",
+    "rls_enabled": true,
+    "policyname": "users can leave rooms",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "table_name": "room_members",
+    "rls_enabled": true,
+    "policyname": "users can join rooms",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "table_name": "room_members",
+    "rls_enabled": true,
+    "policyname": "room_members_select_v2",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "cmd": "SELECT",
+    "qual": "is_member_of_room(room_id)",
+    "with_check": null
+  },
+  {
+    "table_name": "votes",
+    "rls_enabled": true,
+    "policyname": "users can delete own votes",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "(auth.uid() = user_id)",
+    "with_check": null
+  },
+  {
+    "table_name": "votes",
+    "rls_enabled": true,
+    "policyname": "room members can vote",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "((auth.uid() = user_id) AND is_member_of_room(room_id))"
+  },
+  {
+    "table_name": "votes",
+    "rls_enabled": true,
+    "policyname": "room members can view votes",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "cmd": "SELECT",
+    "qual": "is_member_of_room(room_id)",
+    "with_check": null
+  }
+]

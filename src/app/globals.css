@@ -1,11 +1,14 @@
-@import "tailwindcss";
+/* Design tokens are the source of truth — see theme.css. Import once here. */
+@import "./theme.css";
 
 html,
 body {
     padding: 0;
     margin: 0;
-    font-family: var(--font-delius-unicase);
-    background-color: #e9aac2;
+    background-color: var(--color-cream);
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    box-sizing: border-box;
 }
 
 

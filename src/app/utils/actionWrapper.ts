@@ -1,26 +1,28 @@
-// utils/actionWrapper.ts
 import { useUiStore } from "../store/useUiStore";
+import type { UiKey } from "../store/useUiStore";
 import { executeWithUI } from "./actionHelper";
-import { getRequiredContext } from "./context";
+import { getRequiredAuth } from "./context";
 
-interface ActionFunction<T> {
-  action: (context: { userId: string; roomId: string }) => Promise<T>;
+interface AuthActionFunction<T> {
+  action: (context: { token: string }) => Promise<T>;
   onSuccess?: (data: T) => void;
   onError?: (error: unknown) => void;
 }
 
-export async function actionWrapper<T>(
-  key: string,
-  { action, onSuccess, onError }: ActionFunction<T>
+export async function authActionWrapper<T>(
+  key: UiKey,
+  { action, onSuccess, onError }: AuthActionFunction<T>
 ) {
-  const { setLoading , setError } = useUiStore.getState()
+  const { setLoading, setError } = useUiStore.getState();
   return executeWithUI(
     key,
     async () => {
-      const context = getRequiredContext();
+      const context = getRequiredAuth();
       return action(context);
     },
     { setLoading, setError },
     { onSuccess, onError }
   );
 }
+
+export const actionWrapper = authActionWrapper;
