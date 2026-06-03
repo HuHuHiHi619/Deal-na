@@ -30,26 +30,24 @@ const GoogleIcon = ({ size = 24, ...props }) => (
 );
 
 return (
-  <>
-    <div className="flex justify-center bg-blue-500 text-white cursor-pointer hover:scale-105 p-4 space-x-3 rounded-3xl transition-all ease-in-out duration-250 disabled:opacity-50">
-      <Facebook />
-      <button 
-        onClick={() => fb.execute(() => loginWithFacebook())}
-        disabled={fb.isLoading}
-        >
-        {fb.isLoading ? "Logging in..." : "Login with Facebook"}
-      </button>
-    </div>
-    <div className="flex justify-center bg-gray-200 cursor-pointer hover:scale-105 p-4 space-x-3 rounded-3xl transition-all ease-in-out duration-250 disabled:opacity-50">
-      <GoogleIcon/>
-      <button 
-        onClick={() => gg.execute(() => loginWithGoogle())}
-        disabled={gg.isLoading}
-        >
-        {gg.isLoading ? "Logging in..." : "Login with Google"}
-      </button>
-    </div>
-  </>
+  <div className="flex gap-3">
+    <button
+      onClick={() => fb.execute(() => loginWithFacebook())}
+      disabled={fb.isLoading}
+      className="type-body flex flex-1 items-center justify-center gap-2 rounded-lg bg-sky-tint py-3 text-sky cursor-pointer transition-transform duration-200 hover:scale-[1.03] disabled:opacity-50"
+    >
+      <Facebook size={20} />
+      {fb.isLoading ? "..." : "Facebook"}
+    </button>
+    <button
+      onClick={() => gg.execute(() => loginWithGoogle())}
+      disabled={gg.isLoading}
+      className="type-body flex flex-1 items-center justify-center gap-2 rounded-lg bg-sun-tint py-3 text-ink cursor-pointer transition-transform duration-200 hover:scale-[1.03] disabled:opacity-50"
+    >
+      <GoogleIcon size={20} />
+      {gg.isLoading ? "..." : "Google"}
+    </button>
+  </div>
 );
 
 }
