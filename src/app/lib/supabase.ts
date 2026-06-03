@@ -8,6 +8,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const createServerClient = (token: string) => {
   return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
     global: {
       headers: {
         Authorization: `Bearer ${token}`,

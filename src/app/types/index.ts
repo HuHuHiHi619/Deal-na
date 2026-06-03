@@ -2,7 +2,6 @@ export interface Room {
   id: string
   room_code: string
   title: string
-  status: string | null
   created_at: string
   expired_at: string | null
   created_by: string

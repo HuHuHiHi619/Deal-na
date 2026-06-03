@@ -19,13 +19,13 @@ function useCreateRoomMutation() {
         const { valid , error } = validateForm(titleInput , optionsInput)
         if(!valid || !optionsInput) throw new Error(error)
         
-        const res = await fetch("/api/room",{
+        const res = await fetch("/api/room/create",{
             method  : "POST",
             headers : {
                 "Content-Type" : "application/json",
                 Authorization : `Bearer ${session.access_token}`
             },
-            body : JSON.stringify({titleInput , optionsInput})
+            body : JSON.stringify({ title: titleInput, options: optionsInput })
         })
         if(!res.ok) {
             const error = await res.json()
