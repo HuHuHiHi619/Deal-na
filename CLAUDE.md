@@ -31,8 +31,8 @@ Requires `.env.local` with:
 
 ### User flow
 1. Land on `/` → login (Google/Facebook OAuth via Supabase, or test user)
-2. `/room` → create a room (topic + options) → redirected to `/room/[roomId]`
-3. `/room/[roomId]` → vote on options, mark ready
+2. `/room` → create a room (topic + options) → redirected to `/room/[roomId]/lobby`
+3. `/room/[roomId]vote` → vote on options, mark ready
 4. `/room/[roomId]/result` → see winner
 
 ### Auth
@@ -81,16 +81,8 @@ A **single channel** `room:${roomId}` is owned exclusively by `RoomSessionProvid
 ```
 store/
   auth/useAuth.ts              # user, session — loginWithProvider, signOut
-  room/useRoomStore.ts         # currentRoom, rooms, createRoom, startRoom, exitRoom (persisted)
-  room/useRoomMemberStore.ts   # members (string[]) — setMembers, clearMembers
-  room/useRoomReadyStore.ts    # readyMembers, totalMembers, memberNames — setReady, clearReady
-  option/useOptionStore.ts     # optionsMap (Map) — setOptions, deleteOption
-  vote/useVoteStore.ts         # votesMap (Map), voteResults — setVotes, addVote, removeVote, createVote, deleteVote
   useUiStore.ts                # loading/error flags keyed by UiKey — setLoading, setError, clearAll
-  useRoomForm.ts               # Form state for room creation
-```
-
-**Deleted stores** (removed in refactor): `useRoomRealtimeStore`, `useOptionRealtimeStore`, `useVoteRealtimeStore`, `useRoomRealtimeReadyStore`.
+ ```
 
 **Write rules:** stores expose only full-replace setters (e.g. `setMembers`, `setOptions`, `setVotes`). No direct-patch methods. Only `RoomSessionProvider` calls these setters (via versioned fetches or presence sync). Optimistic `addVote`/`removeVote` are the sole exception.
 
@@ -124,11 +116,6 @@ Two patterns coexist:
 **`useAsyncAction`** (`hooks/useAsyncAction.tsx`) — used in hooks/components:
 - Executes an action, manages `useUiStore` loading/error for a given key, calls `onSuccess`/`onError`
 
-**`actionWrapper`** (`utils/actionWrapper.ts`) — used in store actions:
-1. Sets `useUiStore` loading state
-2. Calls `getRequiredContext()` to get `{ userId, roomId }` from store state
-3. Runs the action, clears loading / sets error
-
 ### Path aliases
 `@/` maps to `src/` (configured in `vitest.config.ts` and Next.js).
 
@@ -140,7 +127,24 @@ Tests use Vitest + jsdom + `@testing-library/react`. Test files sit next to the 
 - **Security**: NEVER print actual secret values from `.env` files. Mask them as `KEY=******`.
 - **ACTION** : NEVER push anything if i didn't approve.
 
+## Git workflow
+- One branch per task, cut fresh from latest `main`.
+- Branch prefix = primary conventional-commit type (`feat/`, `fix/`, `refactor/`, `chore/`, `docs/`).
+- Finish → PR → squash-merge → delete branch → next task off updated `main`. No stacking unrelated tasks.
+- `.husky/commit-msg` enforces this: blocks direct commits to `main`, and rejects a commit whose major type (feat/fix/refactor/perf) differs from the branch prefix. Supporting types (chore/docs/test/build/ci/style/revert) allowed anywhere. Bypass once: `git commit --no-verify`.
+
 ## Realtime issues
 read this everytime when work with realtime
 - @FLOW.md , @CONTEXT.md , @.claude/docs/RLS.json , @.claude/docs/RLS.json
 - when finished realtime task you have to update changes at @FLOW.md or @CONTEXT.md ( show draft and wait for approve )
+
+## UI workflow 
+- READ @.claude/design/RE-DESIGN.md every time you work with ui
+- Confetti Pop redesign status:
+  - [x] Foundation — `src/app/theme.css` `@theme` tokens, `globals.css` cream bg, Fredoka via `next/font/google` in `layout.tsx` (`--font-fredoka` → `--font-display`), `component/decor/Confetti.tsx` (variant presets), `lib/cn.ts`
+  - [x] Login — `page.tsx`; `TestUserLoginButton.tsx` split into `component/auth/EmailLoginForm.tsx` + `component/auth/DevQuickLogin.tsx`; `LoginButton.tsx` FB (sky-tint) / Google (sun-tint) chips
+  - [ ] Create / Lobby / Vote / Results / Cleanup
+
+## Doc update rule
+After finishing each screen: update `CLAUDE.md` checklist only.
+Write values and states, not actions. No prose.
