@@ -40,6 +40,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-TODO.md
-DECISION.md
-PLAN.md
+# .claude — ignore scratch/planning docs; keep RE-DESIGN.md + docs/RLS.json (referenced by CLAUDE.md)
+.claude/architecture-refactor/
+.claude/design/design-plan.md
+.claude/design/design-spec.md
+.claude/settings.local.json
+
+# stray local junk
+cls
+
