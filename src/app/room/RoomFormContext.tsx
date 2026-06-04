@@ -1,5 +1,6 @@
 "use client";
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { takeAnotherRound } from "@/app/lib/anotherRound";
 
 export interface RoomFormContextValue {
   titleInput: string;
@@ -16,6 +17,15 @@ const RoomFormContext = createContext<RoomFormContextValue | null>(null);
 export function RoomFormProvider({ children }: { children: ReactNode }) {
   const [titleInput, setTitleInput] = useState('');
   const [optionsInput, setOptionsInput] = useState<string[]>(['', '']);
+
+  // Hydrate from an "another round" seed (tie on the Results page). Read in an
+  // effect, not a useState initializer, to avoid an SSR/client hydration mismatch.
+  useEffect(() => {
+    const seed = takeAnotherRound();
+    if (!seed) return;
+    if (seed.title) setTitleInput(seed.title);
+    if (seed.options.length >= 2) setOptionsInput(seed.options);
+  }, []);
 
   const setTitle = (title: string) => setTitleInput(title);
   const addOptionInput = () => setOptionsInput(prev => [...prev, '']);

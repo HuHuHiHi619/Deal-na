@@ -17,13 +17,12 @@ import useExitRoomMutation from "@/app/hooks/mutation/useExitRoomMutation";
       <button
         onClick={handleExit}
         disabled={isPending}
-        className="w-full bg-rose-400  text-white border border-rose-200 px-6 py-3 rounded-xl font-medium hover:text-xl hover:bg-rose-600 cursor-pointer  transition-all duration-300 flex items-center justify-center space-x-2"
+        className="flex w-full items-center justify-center gap-1.5 py-2 type-caption font-semibold text-muted transition-colors hover:text-ink disabled:opacity-50"
       >
-        <X />
-        <span>Exit Room</span>
+        <X size={15} />
+        <span>{isPending ? "exiting..." : "exit room"}</span>
       </button>
-      {isPending && <p className="text-sm text-rose-600">Exiting room...</p>}
-      {error && <p className="text-sm text-rose-600">{error.message}</p>}
+      {error && <p className="text-center type-caption text-coral">{error.message}</p>}
     </>
   );
 }

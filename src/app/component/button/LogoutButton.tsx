@@ -36,12 +36,12 @@ export default function LogoutButton({ mini = false }) {
         </button>
       ) : (
         <button
-          className="flex items-center justify-center gap-2 bg-white w-full rounded-2xl text-rose-300 border-2 p-2 cursor-pointer hover:bg-rose-400 hover:text-white transition-all duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex w-full items-center justify-center gap-1.5 py-2 type-caption font-semibold text-muted transition-colors hover:text-ink disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleLogout}
           disabled={isLoading}
         >
-          <LogOutIcon />
-          Logout
+          <LogOutIcon size={15} />
+          {isLoading ? "logging out..." : "log out"}
         </button>
       )}
     </div>
