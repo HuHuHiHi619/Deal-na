@@ -27,11 +27,12 @@ export default function LogoutButton({ mini = false }) {
     <div className="flex justify-center my-2">
       {mini ? (
         <button
-          className="bg-white  rounded-full text-rose-400 border-2 p-2 cursor-pointer hover:bg-rose-400 hover:text-white transition-all duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex h-12 w-12 items-center justify-center rounded-xl border border-line bg-card text-ink shadow-sm cursor-pointer hover:bg-cream transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleLogout}
           disabled={isLoading}
+          aria-label="Log out"
         >
-          <LogOutIcon />
+          <LogOutIcon size={20} />
         </button>
       ) : (
         <button

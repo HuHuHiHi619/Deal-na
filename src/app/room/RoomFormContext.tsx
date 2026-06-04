@@ -15,18 +15,19 @@ const RoomFormContext = createContext<RoomFormContextValue | null>(null);
 
 export function RoomFormProvider({ children }: { children: ReactNode }) {
   const [titleInput, setTitleInput] = useState('');
-  const [optionsInput, setOptionsInput] = useState<string[]>(['']);
+  const [optionsInput, setOptionsInput] = useState<string[]>(['', '']);
 
   const setTitle = (title: string) => setTitleInput(title);
   const addOptionInput = () => setOptionsInput(prev => [...prev, '']);
+  // Keep at least 2 options — the minimum a vote needs.
   const removeOptionInput = (index: number) => {
     setOptionsInput(prev =>
-      prev.length >= 3 ? prev.filter((_, i) => i !== index) : prev
+      prev.length > 2 ? prev.filter((_, i) => i !== index) : prev
     );
   };
   const clearForm = () => {
     setTitleInput('');
-    setOptionsInput(['']);
+    setOptionsInput(['', '']);
   };
 
   return (
