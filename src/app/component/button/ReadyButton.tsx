@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from "react";
 import { Ban } from "lucide-react";
+import { cn } from "@/app/lib/cn";
 import { useAuth } from "@/app/store/auth/useAuth";
 import useRoomSession from "@/app/hooks/useRoomSession";
 
@@ -44,7 +45,7 @@ const ReadyButton: React.FC<ReadyButtonProps> = ({ remainingVotes }) => {
   return (
     <>
       {error && (
-        <div className="flex my-4 gap-2 items-center justify-center bg-rose-200 text-red-500 mb-4 py-2 px-4 text-sm shadow-md font-medium rounded-xl">
+        <div className="my-4 flex items-center justify-center gap-2 rounded-xl bg-coral-tint px-4 py-2.5 type-caption font-semibold text-coral">
           <Ban size={16} />
           <span>{error}</span>
         </div>
@@ -52,15 +53,16 @@ const ReadyButton: React.FC<ReadyButtonProps> = ({ remainingVotes }) => {
       <button
         onClick={handleReady}
         disabled={isReady || isLoading}
-        className={`w-full p-2 rounded-2xl transition-all duration-500 ease-in-out ${
+        className={cn(
+          "type-heading w-full rounded-xl py-4 text-white transition-all duration-300",
           isReady
-            ? "bg-emerald-500 ring-offset-4 ring-2 ring-emerald-500 text-white cursor-not-allowed"
+            ? "cursor-not-allowed bg-mint"
             : isLoading
-            ? "bg-gray-400 text-white cursor-not-allowed"
-            : "btn-gradient"
-        }`}
+            ? "cursor-not-allowed bg-muted"
+            : "cursor-pointer bg-brand-gradient shadow-glow-coral hover:-translate-y-0.5",
+        )}
       >
-        {isLoading ? "Locking in..." : isReady ? "Locked In ✓" : "Lock In My Votes"}
+        {isLoading ? "locking in..." : isReady ? "locked in ✓" : "lock it in ✓"}
       </button>
     </>
   );

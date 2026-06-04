@@ -63,7 +63,9 @@ read this everytime when work with realtime
   - [x] Foundation — `src/app/theme.css` `@theme` tokens, `globals.css` cream bg, Fredoka via `next/font/google` in `layout.tsx` (`--font-fredoka` → `--font-display`), `component/decor/Confetti.tsx` (variant presets), `lib/cn.ts`
   - [x] Login — `page.tsx`; `TestUserLoginButton.tsx` split into `component/auth/EmailLoginForm.tsx` + `component/auth/DevQuickLogin.tsx`; `LoginButton.tsx` FB (sky-tint) / Google (sun-tint) chips
   - [x] Create — `room/page.tsx` cream shell + `Confetti variant="create"`; `topic/page.tsx` card, Enter/blur confirm; `OptionForm.tsx` numbered badges + `×` (min 2) + dashed add; `CreateRoomButton.tsx` `bg-brand-gradient`; `UserMenu.tsx` coral avatar; `RoomFormContext.tsx` options `['','']`; NEW `lib/optionColors.ts`
-  - [ ] Lobby / Vote / Results / Cleanup
+  - [x] Lobby — `room/[roomId]/lobby/page.tsx` cream shell + `Confetti variant="share"`; "Room ready" eyebrow; QR `rounded-4xl` card; ink "copy" link pill; `bg-mint-tint` joined panel (stacked `optionBg` avatars + pulsing mint dot); inline option add (cap 3); ink "start voting →" (host, `totalMembers >= 2`)
+  - [x] Vote — shell `room/[roomId]/page.tsx` cream + `Confetti variant="vote"` (rose header dropped); `vote/page.tsx` (`VoteOptions`) "VOTING · LIVE" eyebrow + mint dot, `type-title` topic (via `useRoomQuery`), "N votes to spend", `bg-sun-tint` tip; per-option color via `optionColorAt`; `VoteOptionItem` white `rounded-2xl` + 2px `optionBorder` when `v>0` (dropped `isMyOption`); `VoteCountBadge` 44px solid `optionBg` chip (ink numeral on `sun`); `VoteButton` `tone` fill/ghost; `ReadyButton` `bg-brand-gradient`+`shadow-glow-coral` "lock it in ✓"; locked-in mint retoken
+  - [ ] Results / Cleanup
 
 ## Doc update rule
 After finishing each screen: update `CLAUDE.md` checklist only.

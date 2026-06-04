@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/app/store/auth/useAuth";
 import VoteOptions from "@/app/room/[roomId]/vote/page";
 import { RoomGuard } from "@/app/component/room/RoomGuard";
-import { AppWindow } from "lucide-react";
+import Confetti from "@/app/component/decor/Confetti";
 import useRoomSession from "@/app/hooks/useRoomSession";
 import useRoomQuery from "@/app/hooks/query/useRoomQuery";
 
@@ -30,16 +30,10 @@ export default function RoomPage() {
       error={sessionError}
       user={user ?? null}
     >
-      <div className="min-h-screen backdrop-blur-md">
-        <header className="sticky top-0 z-10 bg-gradient-to-r from-rose-300 to-rose-800 backdrop-blur-md rounded-b-xl ring-offset-4 ring-4 ring-rose-400 shadow-sm">
-          <div className="max-w-4xl flex items-center gap-4 mx-auto pl-8 py-4 text-2xl font-semibold text-white tracking-wide">
-            <AppWindow size={30} />
-            <h1 className="text-3xl">{currentRoom?.title}</h1>
-          </div>
-        </header>
-
-        <main className="max-w-4xl mx-auto px-4 py-8">
-          <VoteOptions roomId={roomId} isJoined={isJoined}/>
+      <div className="relative min-h-screen overflow-hidden bg-cream px-[22px] pt-8 pb-10">
+        <Confetti variant="vote" />
+        <main className="relative z-10 mx-auto w-full max-w-md">
+          <VoteOptions roomId={roomId} isJoined={isJoined} />
         </main>
       </div>
     </RoomGuard>
