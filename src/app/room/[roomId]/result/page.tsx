@@ -1,51 +1,65 @@
 "use client";
+import AnotherRoundButton from "@/app/component/button/AnotherRoundButton";
 import ExitRoomButton from "@/app/component/button/ExitRoomButton";
 import LogoutButton from "@/app/component/button/LogoutButton";
+import ShareResultButton from "@/app/component/button/ShareResultButton";
+import Confetti from "@/app/component/decor/Confetti";
 import { VoteResultsList } from "@/app/component/vote/VoteResultList";
 import { WinnersSection } from "@/app/component/vote/WinnerSection";
-import useVoteMutations from "@/app/hooks/mutation/useVoteMutations";
+import useOptionsQuery from "@/app/hooks/query/useOptionsQuery";
 import useRoomQuery from "@/app/hooks/query/useRoomQuery";
 import useVoteQuery from "@/app/hooks/query/useVotesQuery";
 import useRoomSession from "@/app/hooks/useRoomSession";
 import { useVoteResult } from "@/app/hooks/useVoteResult";
-import { AppWindow } from "lucide-react";
+import { optionColorAt, type OptionColor } from "@/app/lib/optionColors";
+import type { Option } from "@/app/types";
 import { useParams } from "next/navigation";
 import React from "react";
 
 function Page() {
- const { roomId }: { roomId: string } = useParams();
+  const { roomId }: { roomId: string } = useParams();
   const { isJoined } = useRoomSession();
-  const { data : currentRoom } = useRoomQuery(roomId , isJoined);
-  const { data : votesData } = useVoteQuery(roomId , isJoined);
+  const { data: currentRoom } = useRoomQuery(roomId, isJoined);
+  const { data: votesData } = useVoteQuery(roomId, isJoined);
+  const { data: options } = useOptionsQuery(roomId, isJoined);
 
-  const { winners , results , totalVotes} = useVoteResult({ voteResults: votesData?.formattedResult ?? [] });
+  const { winners, results, totalVotes } = useVoteResult({
+    voteResults: votesData?.formattedResult ?? [],
+  });
+
+  // Slot color stays with an option from Create → Vote → Results (keyed by id).
+  const colorByOptionId: Record<string, OptionColor> = {};
+  (options ?? []).forEach((o: Option, i: number) => {
+    colorByOptionId[o.id] = optionColorAt(i);
+  });
+
+  const isTie = winners.length > 1;
+  const optionLabels = (options ?? []).map((o: Option) => o.title);
+  const shareText = isTie
+    ? `"${currentRoom?.title ?? "Our deal"}" — it's a tie: ${winners.map((w) => w.title).join(", ")}`
+    : `"${currentRoom?.title ?? "Our deal"}" — the deal is ${winners[0]?.title ?? "?"} (${winners[0]?.voteCount ?? 0} votes)`;
 
   return (
-    <div className="">
-      <header className="sticky top-0 z-10 bg-gradient-to-r from-rose-300 to-rose-800 backdrop-blur-md ring-offset-4 ring-4 ring-rose-400 shadow-sm">
-        <div className="max-w-4xl flex items-center gap-4 mx-auto px-4 py-4 text-2xl font-semibold text-white tracking-wide">
-          <AppWindow size={30} />
-          <h1 className="">Topic : {currentRoom?.title}</h1>
-        </div>
-      </header>
+    <div className="relative min-h-screen overflow-hidden bg-cream px-[22px] pt-8 pb-10">
+      <Confetti variant="result" />
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        <WinnersSection winners={winners} />
+      <main className="relative z-10 mx-auto flex w-full max-w-md flex-col gap-6">
+        <WinnersSection winners={winners} totalVotes={totalVotes} />
 
-        <VoteResultsList results={results} winners={winners} />
+        <VoteResultsList results={results} colorByOptionId={colorByOptionId} />
 
-        {/* Total Votes Display (Optional) */}
-        <div className="mt-6 text-center">
-          <p className="text-gray-600 text-sm">
-            Total Votes:{" "}
-            <span className="font-medium text-indigo-600">{totalVotes}</span>
-          </p>
-        </div>
+        <p className="type-caption text-center text-muted">
+          {totalVotes} vote{totalVotes !== 1 ? "s" : ""} cast in total
+        </p>
 
-        {/* Exit Button */}
-        <div className="mt-10 pt-6 border-t border-white/30">
-          <ExitRoomButton />
-          <LogoutButton />
+        <div className="flex flex-col gap-3 pt-2">
+          <ShareResultButton shareText={shareText} />
+          <AnotherRoundButton isTie={isTie} title={currentRoom?.title ?? ""} options={optionLabels} />
+
+          <div className="mt-2 border-t border-line pt-2">
+            <ExitRoomButton />
+            <LogoutButton mini={false} />
+          </div>
         </div>
       </main>
     </div>

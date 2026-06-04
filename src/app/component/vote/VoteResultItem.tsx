@@ -1,43 +1,34 @@
+import { cn } from "@/app/lib/cn";
+import { optionBg, optionText, type OptionColor } from "@/app/lib/optionColors";
 
 interface VoteResultItemProps {
   title: string;
   voteCount: number;
   percentage: number;
-  isWinner?: boolean;
+  color: OptionColor;
 }
 
-export function VoteResultItem({ 
-  title, 
-  voteCount, 
-  percentage, 
+export function VoteResultItem({
+  title,
+  voteCount,
+  percentage,
+  color,
 }: VoteResultItemProps) {
   return (
-    <div className="backdrop-blur-md bg-rose-100 to-lavender-50/50 border border-white/40 rounded-2xl p-5 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-    
-        <div className="min-w-0 flex-1">
-          <p className="font-medium text-gray-800 text-lg line-clamp-2 break-words">
-            {title}
-          </p>
-        </div>
-        
-      
-        <div className="flex items-center space-x-3 flex-shrink-0">
-          <span className="bg-rose-100/60 text-rose-600 px-2.5 py-1 rounded-lg text-sm font-medium shadow-inner whitespace-nowrap">
-            {voteCount} votes
-          </span>
-          <span className="bg-lavender-100/60 text-indigo-600 px-2.5 py-1 rounded-lg text-sm font-medium shadow-inner whitespace-nowrap">
-            {percentage.toFixed(2)}%
-          </span>
-        </div>
+    <div className="rounded-xl bg-card p-4 shadow-sm">
+      <div className="mb-2.5 flex items-center gap-2.5">
+        <span className={cn("h-2.5 w-2.5 flex-shrink-0 rounded-full", optionBg[color])} />
+        <p className="type-body min-w-0 flex-1 truncate font-semibold text-ink">{title}</p>
+        <span className="type-caption text-muted">{percentage.toFixed(0)}%</span>
+        <span className={cn("type-body font-bold tabular-nums", optionText[color])}>{voteCount}</span>
       </div>
 
-      {/* Progress Bar */}
-      <div className="w-full bg-white/30 backdrop-blur-sm rounded-full h-2.5 overflow-hidden shadow-inner">
+      {/* Progress bar — h10 / r6 per spec */}
+      <div className="h-2.5 w-full overflow-hidden rounded-md bg-line">
         <div
-          className="bg-gradient-to-r from-rose-400 to-pink-400 h-2.5 rounded-full transition-all duration-1000 ease-out"
-          style={{ width: `${percentage.toFixed(2)}%` }}
-        ></div>
+          className={cn("h-full rounded-md transition-all duration-700 ease-out", optionBg[color])}
+          style={{ width: `${percentage}%` }}
+        />
       </div>
     </div>
   );
