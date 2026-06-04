@@ -1,44 +1,27 @@
 "use client";
-import { ChevronRight } from "lucide-react";
-import { useState } from "react";
 import { useAuth } from "../store/auth/useAuth";
 import LogoutButton from "./button/LogoutButton";
-import Image from "next/image";
 
 const UserMenu = () => {
-  const [open, setOpen] = useState(false);
   const { user } = useAuth();
 
-  const avatarUrl =
-    user?.user_metadata?.avatar_url || // Google
-    user?.user_metadata?.picture; // Facebook
+  const name = user?.user_metadata?.full_name as string | undefined;
+  const email = user?.email ?? "";
+  const initial = (name?.[0] || email[0] || "?").toUpperCase();
 
   return (
-    <div className="relative ">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-3 py-2 bg-rose-100 cursor-pointer rounded-4xl hover:bg-rose-400 hover:scale-105 transition-all duration-300 "
-      >
-        <div className="relative w-8 h-8">
-          <Image
-            src={avatarUrl || "/avatar.png"}
-            alt="avatar"
-            fill
-            className="rounded-full object-cover"
-          />
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="type-heading flex h-12 w-12 items-center justify-center rounded-xl bg-coral text-white">
+          {initial}
         </div>
-
-        <span className="text-sm font-medium ">
-          {user?.user_metadata.full_name || user?.email}
-        </span>
-        <ChevronRight size={16} className="text-gray-500" />
-      </button>
-
-      {open && (
-        <div className="absolute -right-32 -top-3 mt-2 w-48 b overflow-hidden">
-          <LogoutButton mini={true} />
+        <div className="leading-tight">
+          <p className="type-caption text-muted">signed in as</p>
+          <p className="type-body font-semibold text-ink">{name || email}</p>
         </div>
-      )}
+      </div>
+
+      <LogoutButton mini />
     </div>
   );
 };
