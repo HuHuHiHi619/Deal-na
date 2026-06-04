@@ -16,7 +16,7 @@
 4. User join via link/QR 
 
 ### Story 2: Start voting
-- **Precondition**: all member is inside lobby already (count = expected)
+- **Precondition**: at least 2 members joined the lobby (host eyeballs the "N friends joined" panel — no per-member ready gate)
 - Host press "Start Voting" → everyone navigate to vote
 
 ### Story 3: Voting
@@ -45,7 +45,7 @@ Lobby → VoteSession → LockedState → Result
      └──────── Another Round ──────────────┘
 
 ## Expected Realtime Behavior
-- Lobby: member list, ready status 
+- Lobby: member list (who has joined)
 - VoteSession: own votes  
 - LockedState: everyone ready status 
 - Result: final votes (aggregate)

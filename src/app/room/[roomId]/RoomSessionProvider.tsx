@@ -20,6 +20,7 @@ interface RoomSessionProps {
   roomId: string;
   userId: string;
   token: string;
+  name: string;
 }
 
 interface PresenceMeta {
@@ -38,6 +39,7 @@ export const RoomSessionProvider = ({
   roomId,
   userId,
   token,
+  name,
 }: RoomSessionProps) => {
   const queryClient = useQueryClient();
   const [isJoined, setIsJoined] = useState<boolean>(false);
@@ -54,7 +56,7 @@ export const RoomSessionProvider = ({
   // here to avoid e.g. locking wiping the lobby-ready `status` (and vice versa).
   const selfMetaRef = useRef<PresenceMeta>({
     user_id: userId,
-    name: "Player",
+    name: name || "Player",
     status: false,
     locked: false,
   });

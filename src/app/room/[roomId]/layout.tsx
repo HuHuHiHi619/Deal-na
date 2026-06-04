@@ -18,9 +18,15 @@ export default function RoomLayout({
 
   if (!session) return <LoadingPage />;
 
+  const name =
+    session.user.user_metadata?.name ??
+    session.user.user_metadata?.full_name ??
+    session.user.email ??
+    "Player";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/40 to-lavender-50/40 backdrop-blur-md">
-      <RoomSessionProvider roomId={roomId} userId={session.user.id} token={session.access_token}>
+      <RoomSessionProvider roomId={roomId} userId={session.user.id} token={session.access_token} name={name}>
         {children}
       </RoomSessionProvider>
     </div>
