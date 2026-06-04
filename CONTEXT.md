@@ -16,7 +16,7 @@ Any member who joins a Room via link or QR code. Guests cannot start the Vote Se
 Any authenticated user participating in a Room, including the Host. A Member's identity is their `userId`.
 
 ### Lobby
-The pre-voting waiting room. Members gather here after joining. The Host sees all connected Members and controls when to start.
+The pre-voting waiting room. Members gather here after joining. The Host sees all connected Members (the "N friends joined" panel) and starts the Vote Session whenever ready — there is no per-member ready gate. Start requires at least 2 Members joined (a solo session can never resolve a Result — see Vote Session).
 
 ### Vote Session
 The phase when voting is active. Members cannot see each other's votes. Each Member has a fixed vote budget (3 votes, free allocation across options).
@@ -34,14 +34,15 @@ A choice that Members vote on within a Room. Options are created by the Host at 
 A single allocation of one vote unit from a Member to an Option. A Member may cast up to 3 votes total, split freely across Options.
 
 ### Ready
-A Member state with two distinct phases, both tracked via Supabase Presence (not persisted to DB):
-- **Lobby-ready** (`status`): pressed "I'm Ready" in the Lobby; gates the Host's Start button.
+A Member state tracked via Supabase Presence (not persisted to DB):
 - **Vote-locked** (`locked`): pressed "Lock In My Votes" in the Vote Session; when all Members are locked, the session advances to Result automatically.
 
-These are separate presence booleans so that lobby-readiness never leaks into the Vote Session — the Lobby and Vote Session share one RoomSessionProvider across the soft-navigation, so a single shared flag would carry over.
+The Lobby has **no** per-member ready step — the Host starts the Vote Session whenever the crew has gathered (see Lobby). The presence payload still carries a `status` field plus `sendReady`/`sendUnready`/`readyMembers` in `RoomSessionProvider`, but nothing in the UI sets or reads them anymore; they are dead until a future feature needs a lobby-ready gate. `locked` is the only live readiness flag.
+
+A Member's display `name` is written into Presence on join (so the Lobby's "N friends joined" avatars show real initials immediately), and re-sent whenever `locked` changes.
 
 ### Presence
-The real-time membership state of the Supabase channel. Per Member it tracks `{ user_id, name, status (lobby-ready), locked (vote-locked) }`. Presence is ephemeral — it does not persist to the database, and is not subject to RLS.
+The real-time membership state of the Supabase channel. Per Member it tracks `{ user_id, name, status, locked (vote-locked) }`. `status` (formerly lobby-ready) is no longer used by the UI. Presence is ephemeral — it does not persist to the database, and is not subject to RLS.
 
 ### Reconnect Recovery
 The behavior when a Member's WebSocket connection drops and re-establishes. The app re-fetches all state slices and re-tracks the Member's Presence with their last known Ready state.

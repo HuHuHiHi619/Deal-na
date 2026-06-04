@@ -1,6 +1,7 @@
 'use client';
 import React from "react";
 import { Check, Clock } from "lucide-react";
+import { cn } from "@/app/lib/cn";
 
 interface ReadinessSlotsProps {
   readyMembers: string[];
@@ -11,7 +12,7 @@ const ReadinessSlots: React.FC<ReadinessSlotsProps> = ({ readyMembers, memberNam
   const allUserIds = Array.from(memberNames.keys());
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       {allUserIds.map((userId) => {
         const name = memberNames.get(userId) ?? "Member";
         const isReady = readyMembers.includes(userId);
@@ -19,36 +20,37 @@ const ReadinessSlots: React.FC<ReadinessSlotsProps> = ({ readyMembers, memberNam
         return (
           <div
             key={userId}
-            className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-300 ${
+            className={cn(
+              "flex items-center gap-3 rounded-2xl px-4 py-3 transition-all duration-300",
               isReady
-                ? "bg-emerald-100 border-emerald-300 ring-1 ring-emerald-400 scale-[1.02]"
-                : "bg-gray-100 border-gray-200 scale-100"
-            }`}
+                ? "bg-mint-tint scale-[1.02]"
+                : "bg-line/40 scale-100",
+            )}
           >
             <div
-              className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-300 ${
-                isReady ? "bg-emerald-500" : "bg-gray-300"
-              }`}
+              className={cn(
+                "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full transition-colors duration-300",
+                isReady ? "bg-mint" : "bg-line",
+              )}
             >
               {isReady ? (
                 <Check size={14} className="text-white" />
               ) : (
-                <Clock size={14} className="text-gray-500" />
+                <Clock size={14} className="text-muted" />
               )}
             </div>
 
             <span
-              className={`font-medium transition-colors duration-300 ${
-                isReady ? "text-emerald-800" : "text-gray-500"
-              }`}
+              className={cn(
+                "type-body font-semibold transition-colors duration-300",
+                isReady ? "text-ink" : "text-muted",
+              )}
             >
               {name}
             </span>
 
             {isReady && (
-              <span className="ml-auto text-xs font-semibold text-emerald-600 uppercase tracking-wide">
-                Locked
-              </span>
+              <span className="type-eyebrow ml-auto text-mint">Locked</span>
             )}
           </div>
         );

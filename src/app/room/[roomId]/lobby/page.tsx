@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { Users, Copy, Check, Play, Plus, CheckCircle2 } from "lucide-react";
+import { Copy, Check, Plus } from "lucide-react";
 import { useAuth } from "@/app/store/auth/useAuth";
 import { RoomGuard } from "@/app/component/room/RoomGuard";
+import Confetti from "@/app/component/decor/Confetti";
+import { cn } from "@/app/lib/cn";
+import { optionColorAt, optionBg } from "@/app/lib/optionColors";
 import useRoomQuery from "@/app/hooks/query/useRoomQuery";
 import useOptionsQuery from "@/app/hooks/query/useOptionsQuery";
 import useOptionMutations from "@/app/hooks/mutation/useOptionMutations";
@@ -17,7 +20,7 @@ export default function LobbyPage() {
   const { roomId }: { roomId: string } = useParams();
   const router = useRouter();
   const { user, session } = useAuth();
-  const { isJoined, error: sessionError, totalMembers, readyMembers, sendReady } = useRoomSession();
+  const { isJoined, error: sessionError, totalMembers, memberNames } = useRoomSession();
   const { data: currentRoom } = useRoomQuery(roomId, isJoined);
   const { data: options } = useOptionsQuery(roomId, isJoined);
   const { addOption, isPending: isAddingOption } = useOptionMutations(roomId);
@@ -26,7 +29,6 @@ export default function LobbyPage() {
   const [isStarting, setIsStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [optionInput, setOptionInput] = useState("");
-  const [isReadying, setIsReadying] = useState(false);
 
   useEffect(() => {
     if (!isJoined || !currentRoom) return;
@@ -41,11 +43,9 @@ export default function LobbyPage() {
     `${typeof window !== "undefined" ? window.location.origin : ""}/room/${roomId}`;
 
   const optionCount = options?.length ?? 0;
-  const slotsRemaining = OPTION_CAP - optionCount;
   const optionsFull = optionCount >= OPTION_CAP;
 
-  const isMyReady = readyMembers.includes(user?.id ?? "");
-  const allReady = totalMembers > 0 && readyMembers.length >= totalMembers;
+  const canStart = totalMembers >= 2;
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(roomUrl);
@@ -58,18 +58,6 @@ export default function LobbyPage() {
     if (!trimmed || optionsFull) return;
     addOption(trimmed);
     setOptionInput("");
-  };
-
-  const handleReady = async () => {
-    if (!sendReady) return;
-    setIsReadying(true);
-    const name =
-      user?.user_metadata?.name ??
-      user?.user_metadata?.full_name ??
-      user?.email ??
-      undefined;
-    await sendReady(name);
-    setIsReadying(false);
   };
 
   const handleStartVoting = async () => {
@@ -87,6 +75,9 @@ export default function LobbyPage() {
     }
   };
 
+  const members = Array.from(memberNames.entries());
+  const initialOf = (name: string) => name.trim().charAt(0).toUpperCase() || "?";
+
   return (
     <RoomGuard
       isJoining={!isJoined && !sessionError}
@@ -95,144 +86,145 @@ export default function LobbyPage() {
       error={sessionError}
       user={user ?? null}
     >
-      <div className="min-h-screen">
-        <header className="sticky top-0 z-10 bg-gradient-to-r from-rose-300 to-rose-800 backdrop-blur-md rounded-b-xl ring-offset-4 ring-4 ring-rose-400 shadow-sm">
-          <div className="max-w-4xl flex items-center gap-4 mx-auto pl-8 py-4 text-2xl font-semibold text-white tracking-wide">
-            <h1 className="text-3xl">{currentRoom?.title}</h1>
-          </div>
-        </header>
+      <div className="relative min-h-screen overflow-hidden bg-cream px-[22px] pt-8 pb-10">
+        <Confetti variant="share" />
 
-        <main className="max-w-sm mx-auto px-4 py-10 flex flex-col gap-8">
+        <main className="relative z-10 mx-auto flex w-full max-w-md flex-col gap-6">
+          {/* Header */}
+          <header className="text-center">
+            <p className="type-eyebrow text-coral">Room ready</p>
+            <h1 className="type-title mt-2 text-ink">Invite the crew 🎉</h1>
+            <p className="type-caption mt-1 text-muted">scan or copy the link below</p>
+          </header>
 
-          {/* QR + share */}
-          <div className="flex flex-col items-center gap-4">
-            <div className="bg-white/80 backdrop-blur-sm p-5 rounded-2xl border border-rose-200 shadow-sm text-center">
-              <p className="text-sm text-gray-500 font-medium mb-3">Scan to join</p>
-              <QRCodeSVG value={roomUrl} size={160} level="M" bgColor="#fdf2f8" fgColor="#be185d" />
-            </div>
-            <div className="w-full bg-rose-50 rounded-xl p-4 flex items-center justify-between gap-3 shadow-sm border border-rose-100">
-              <p className="text-gray-700 text-sm truncate">{roomUrl}</p>
-              <button
-                onClick={handleCopy}
-                className="flex-shrink-0 p-2 rounded-lg bg-white border border-rose-200 text-rose-500 hover:bg-rose-100 transition-colors"
-              >
-                {isCopied ? <Check size={18} className="text-emerald-500" /> : <Copy size={18} />}
-              </button>
+          {/* QR card */}
+          <div className="flex flex-col items-center gap-4 rounded-4xl bg-card p-7 shadow-lg">
+            <QRCodeSVG value={roomUrl} size={172} level="M" bgColor="#FFFFFF" fgColor="#1F1B2E" />
+            <div className="text-center">
+              <p className="type-heading text-ink">{currentRoom?.title}</p>
+              {currentRoom?.room_code && (
+                <p className="type-caption mt-1 text-muted">
+                  room <span className="font-bold text-coral">#{currentRoom.room_code}</span>
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Member count */}
-          <div className="flex items-center gap-2 text-gray-500 text-sm">
-            <Users size={18} className="text-rose-400" />
-            <span>{totalMembers} {totalMembers === 1 ? "member" : "members"} in lobby</span>
+          {/* Link pill */}
+          <div className="flex items-center gap-3 rounded-2xl bg-card p-2 pl-4 shadow-sm">
+            <p className="type-caption flex-1 truncate text-ink">{roomUrl}</p>
+            <button
+              onClick={handleCopy}
+              className="type-caption flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-ink px-4 py-2.5 font-semibold text-cream transition-transform hover:scale-[1.03]"
+            >
+              {isCopied ? <Check size={15} /> : <Copy size={15} />}
+              {isCopied ? "copied" : "copy"}
+            </button>
+          </div>
+
+          {/* Joined panel */}
+          <div className="flex items-center gap-3 rounded-2xl bg-mint-tint px-4 py-3">
+            <div className="flex -space-x-2">
+              {members.slice(0, 4).map(([id, name], i) => (
+                <span
+                  key={id}
+                  className={cn(
+                    "flex h-7 w-7 items-center justify-center rounded-full border-2 border-cream text-[11px] font-bold text-white",
+                    optionBg[optionColorAt(i)],
+                  )}
+                >
+                  {initialOf(name)}
+                </span>
+              ))}
+            </div>
+            <span className="type-caption flex-1 font-semibold text-ink">
+              {totalMembers} {totalMembers === 1 ? "friend" : "friends"} joined
+            </span>
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-mint" />
           </div>
 
           {/* Options */}
-          <div className="w-full">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                Options
-              </h2>
-              <span className="text-xs text-gray-400">{optionCount} / {OPTION_CAP}</span>
+          <section>
+            <div className="mb-2.5 flex items-center justify-between">
+              <h2 className="type-eyebrow text-muted">Options</h2>
+              <span className="type-caption text-muted">{optionCount} / {OPTION_CAP}</span>
             </div>
 
-            <div className="space-y-2 mb-3">
-              {options?.map((option) => (
+            <div className="flex flex-col gap-2">
+              {options?.map((option, i) => (
                 <div
                   key={option.id}
-                  className="bg-white rounded-xl px-4 py-3 text-sm text-gray-700 border border-rose-100 shadow-sm"
+                  className="flex items-center gap-3 rounded-xl bg-card px-3 py-2.5 shadow-sm"
                 >
-                  {option.title}
+                  <span
+                    className={cn(
+                      "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md text-[11px] font-bold text-white",
+                      optionBg[optionColorAt(i)],
+                    )}
+                  >
+                    {i + 1}
+                  </span>
+                  <span className="type-body text-ink">{option.title}</span>
                 </div>
               ))}
             </div>
 
             {optionsFull ? (
-              <p className="text-xs text-center text-gray-400 py-2">
-                All 3 option slots are filled — you&apos;re good to go.
+              <p className="type-caption mt-2 text-center text-muted">
+                All {OPTION_CAP} option slots are filled — you&apos;re good to go.
               </p>
             ) : (
-              <>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={optionInput}
-                    onChange={(e) => setOptionInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleAddOption()}
-                    placeholder="Add an option..."
-                    disabled={isAddingOption}
-                    className="flex-1 rounded-xl border border-rose-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 disabled:opacity-50"
-                  />
-                  <button
-                    onClick={handleAddOption}
-                    disabled={!optionInput.trim() || isAddingOption}
-                    className="p-2 rounded-xl bg-rose-400 text-white hover:bg-rose-500 transition-colors disabled:opacity-40"
-                  >
-                    <Plus size={18} />
-                  </button>
-                </div>
-                <p className="text-xs text-gray-400 mt-2 text-right">
-                  {slotsRemaining} slot{slotsRemaining !== 1 ? "s" : ""} remaining
-                </p>
-              </>
-            )}
-          </div>
-
-          {/* Readiness */}
-          <div className="w-full">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                Ready to vote
-              </h2>
-              <span className="text-xs text-gray-400">{readyMembers.length} / {totalMembers}</span>
-            </div>
-
-            {isMyReady ? (
-              <div className="flex items-center gap-2 justify-center py-3 text-emerald-600 text-sm font-medium">
-                <CheckCircle2 size={18} />
-                <span>You&apos;re ready — waiting for others...</span>
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="text"
+                  value={optionInput}
+                  onChange={(e) => setOptionInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddOption()}
+                  placeholder="Add an option..."
+                  disabled={isAddingOption}
+                  className="type-body flex-1 rounded-xl border-[1.5px] border-line bg-card px-4 py-2.5 text-ink outline-none transition-colors focus:border-coral disabled:opacity-50"
+                />
+                <button
+                  onClick={handleAddOption}
+                  disabled={!optionInput.trim() || isAddingOption}
+                  className="flex flex-shrink-0 items-center justify-center rounded-xl bg-coral px-3 text-white transition-transform hover:scale-[1.03] disabled:opacity-40"
+                >
+                  <Plus size={18} />
+                </button>
               </div>
-            ) : (
-              <button
-                onClick={handleReady}
-                disabled={isReadying}
-                className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-colors disabled:opacity-50"
-              >
-                {isReadying ? "Confirming..." : "I'm Ready"}
-              </button>
             )}
-          </div>
+          </section>
 
           {/* Host: start voting */}
           {isHost && (
-            <div className="w-full">
+            <div>
               <button
                 onClick={handleStartVoting}
-                disabled={!allReady || isStarting}
-                className={`w-full flex items-center justify-center gap-3 bg-gradient-to-r from-rose-400 to-pink-400 text-white text-xl font-medium px-6 py-4 rounded-xl transition-all duration-300 ${
-                  !allReady || isStarting
-                    ? "opacity-50 cursor-not-allowed"
-                    : "hover:-translate-y-1 cursor-pointer shadow-md hover:shadow-lg"
-                }`}
+                disabled={!canStart || isStarting}
+                className={cn(
+                  "type-heading w-full rounded-xl bg-ink py-4 text-cream transition-all duration-300",
+                  !canStart || isStarting
+                    ? "cursor-not-allowed opacity-50"
+                    : "cursor-pointer shadow-lg hover:-translate-y-0.5",
+                )}
               >
-                <Play size={24} />
-                {isStarting ? "Starting..." : "Start Voting →"}
+                {isStarting ? "Starting..." : "start voting →"}
               </button>
-              {!allReady && !isStarting && (
-                <p className="text-xs text-center text-gray-400 mt-2">
-                  Waiting for everyone to press &quot;I&apos;m Ready&quot; before you can start.
+              {!canStart && !isStarting && (
+                <p className="type-caption mt-2 text-center text-muted">
+                  Waiting for at least one friend to join before you can start.
                 </p>
               )}
               {startError && (
-                <p className="text-red-500 text-sm text-center mt-2">{startError}</p>
+                <p className="type-caption mt-2 text-center text-coral">{startError}</p>
               )}
             </div>
           )}
 
           {/* Guest: waiting for host */}
-          {!isHost && allReady && (
-            <p className="text-gray-400 text-sm text-center animate-pulse">
-              Everyone&apos;s ready — waiting for the host to start voting...
+          {!isHost && (
+            <p className="type-caption animate-pulse text-center text-muted">
+              Waiting for the host to start voting...
             </p>
           )}
         </main>
