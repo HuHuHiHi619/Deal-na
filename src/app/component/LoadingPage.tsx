@@ -1,4 +1,5 @@
 import React from 'react'
+import Confetti from '@/app/component/decor/Confetti'
 
 interface LoadingStateProps {
   title?: string;
@@ -6,23 +7,22 @@ interface LoadingStateProps {
   showSpinner?: boolean;
 }
 
-export function LoadingPage({ 
-  title = "Loading...", 
-  subtitle, 
-  showSpinner = true 
+export function LoadingPage({
+  title = "Loading...",
+  subtitle,
+  showSpinner = true
 }: LoadingStateProps) {
   return (
-    <div className="flex h-screen items-center justify-center bg-gradient-to-br from-rose-50/40 to-lavender-50/40 backdrop-blur-xl">
-      <div className="text-center bg-white/40 px-8 py-6 rounded-2xl shadow-md border border-white/30 backdrop-blur-md">
-        <p className="text-gray-700 text-lg font-medium tracking-wide">
-          {title}
-        </p>
+    <div className="relative flex h-screen items-center justify-center bg-cream">
+      <Confetti variant="login" />
+      <div className="relative z-10 rounded-3xl bg-card px-8 py-6 text-center shadow-lg">
+        <p className="type-heading text-ink">{title}</p>
         {subtitle && (
-          <p className="text-gray-500 text-sm mt-2">{subtitle}</p>
+          <p className="type-caption mt-2 text-muted">{subtitle}</p>
         )}
         {showSpinner && (
-          <div className="mt-3 flex justify-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
+          <div className="mt-4 flex justify-center">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-coral" />
           </div>
         )}
       </div>

@@ -25,7 +25,7 @@ export default function RoomLayout({
     "Player";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/40 to-lavender-50/40 backdrop-blur-md">
+    <div className="min-h-screen bg-cream">
       <RoomSessionProvider roomId={roomId} userId={session.user.id} token={session.access_token} name={name}>
         {children}
       </RoomSessionProvider>
