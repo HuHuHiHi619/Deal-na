@@ -1,23 +1,33 @@
 import React from "react";
+import { cn } from "@/app/lib/cn";
+import { OptionColor, optionBg } from "@/app/lib/optionColors";
 
 interface VoteButtonProps {
   onClick: () => void;
   icon: React.ReactNode;
-  className?: string;
   disabled?: boolean;
+  /** "fill" = solid option color (add), "ghost" = neutral (remove) */
+  tone?: "fill" | "ghost";
+  color?: OptionColor;
 }
 
 export const VoteButton: React.FC<VoteButtonProps> = ({
   onClick,
   icon,
-  className = "",
   disabled = false,
+  tone = "ghost",
+  color = "coral",
 }) => {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`bg-white hover:scale-120 cursor-pointer backdrop-blur-sm p-2 rounded-lg shadow-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed ${className}`}
+      className={cn(
+        "flex h-9 w-9 flex-shrink-0 cursor-pointer items-center justify-center rounded-md transition-all hover:scale-110 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:scale-100",
+        tone === "fill"
+          ? cn(optionBg[color], color === "sun" ? "text-ink" : "text-white")
+          : "bg-line/60 text-muted",
+      )}
     >
       {icon}
     </button>

@@ -1,22 +1,23 @@
-
 import React from "react";
+import { cn } from "@/app/lib/cn";
+import { OptionColor, optionBg } from "@/app/lib/optionColors";
 
 interface VoteCountBadgeProps {
   count: number;
-  isMyOption: boolean;
+  color: OptionColor;
 }
 
-export const VoteCountBadge: React.FC<VoteCountBadgeProps> = ({
-  count,
-  isMyOption,
-}) => {
+// Light chips need dark numerals for contrast (sun is pale yellow).
+const DARK_NUMERAL: Partial<Record<OptionColor, boolean>> = { sun: true };
+
+export const VoteCountBadge: React.FC<VoteCountBadgeProps> = ({ count, color }) => {
   return (
     <span
-      className={`flex items-center justify-center w-10 h-10 rounded-xl text-white text-lg font-semibold shadow-inner ${
-        isMyOption
-          ? "bg-rose-400/80"
-          : "bg-indigo-400/80"
-      }`}
+      className={cn(
+        "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg type-heading shadow-inset-bar",
+        optionBg[color],
+        DARK_NUMERAL[color] ? "text-ink" : "text-white",
+      )}
     >
       {count}
     </span>
