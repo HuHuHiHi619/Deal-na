@@ -19,3 +19,32 @@ body {
   justify-content: center;
 }
 
+/* ---- Gift reveal (Results) — card pops in, light sweeps across ---- */
+@keyframes gift-card-in {
+  0%   { opacity: 0; transform: translateY(10px) scale(0.7); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.04); }
+  100% { transform: translateY(0) scale(1); }
+}
+.animate-gift-card {
+  animation: gift-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes gift-shine {
+  from { transform: translateX(-160%) skewX(-18deg); }
+  to   { transform: translateX(160%) skewX(-18deg); }
+}
+.gift-shine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  animation: gift-shine 0.9s ease-in-out 0.45s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-gift-card { animation: none; }
+  .gift-shine { display: none; }
+}
+
