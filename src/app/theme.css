@@ -91,6 +91,9 @@
     background-image: linear-gradient(135deg, var(--color-coral), var(--color-pink));
   }
 
+  /* ---- gift-reveal scrim (dark spotlight backdrop) ---- */
+  .bg-scrim { background-color: color-mix(in srgb, var(--color-ink) 92%, transparent); }
+
   /* ---- soft surface tints (per spec: 20–25% alpha) ---- */
   .bg-coral-tint { background-color: color-mix(in srgb, var(--color-coral) 20%, transparent); }
   .bg-mint-tint  { background-color: color-mix(in srgb, var(--color-mint) 20%, transparent); }
